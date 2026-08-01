@@ -97,3 +97,215 @@ The system is built as a serious educational and portfolio project. It prioritiz
 ---
 
 ## 5. High-Level Architecture
+Clients (UI / Bots / API Users)
+│
+▼
+┌─────────────────────────┐
+│   API Gateway Layer     │  REST + WebSocket
+│   (Auth, Validation,    │
+│    Rate Limiting)       │
+└────────────┬────────────┘
+│
+▼
+┌─────────────────────────┐
+│   Risk Engine           │  Pre-trade checks
+└────────────┬────────────┘
+│
+▼
+┌─────────────────────────┐
+│   Sequencer             │  Assigns monotonic sequence number
+└────────────┬────────────┘
+│
+▼
+┌─────────────────────────┐
+│   Matching Engine       │  Single-threaded per instrument
+│   + Order Books         │  In-memory price-time books
+└────────────┬────────────┘
+│
+┌─────┴─────┐
+▼           ▼
+┌────────────┐  ┌──────────────────┐
+│  Journal   │  │ Market Data      │
+│  + Snapshot│  │ Publisher        │
+└────────────┘  └────────┬─────────┘
+│
+▼
+Accounts / Positions Service
+
+
+**Key Principles**
+- The Matching Engine is a pure, deterministic state machine driven by a totally ordered stream of commands.
+- All side effects (persistence, market data, balance updates) happen *after* the match decision via emitted events.
+- Instruments can be sharded later by assigning different symbols to different matching instances.
+
+---
+
+## 6. Core Components
+
+1. **API Gateway**  
+   Handles REST and WebSocket connections, authentication (JWT + API keys), basic validation, and rate limiting. Translates external requests into internal Commands.
+
+2. **Risk Engine**  
+   Performs pre-trade checks against account balances, position limits, and instrument status. Fail-closed: if risk cannot be verified, the order is rejected.
+
+3. **Sequencer**  
+   Assigns a globally increasing sequence number and timestamp to every accepted command. This is the foundation of determinism.
+
+4. **Matching Engine + Order Book**
+    - Maintains one order book per instrument.
+    - Data structures: sorted price levels + FIFO queue at each price + OrderID lookup map.
+    - Executes price-time matching.
+    - Emits events for every state change.
+
+5. **Event Journal & Snapshot Store**  
+   Append-only log of Commands and Events. Periodic full snapshots of books and accounts for fast recovery.
+
+6. **Market Data Publisher**  
+   Consumes events and produces BBO, depth, and trade messages for WebSocket subscribers. Supports snapshot requests.
+
+7. **Accounts & Positions Service**  
+   Maintains balances and positions. Applies fills and updates available buying power.
+
+---
+
+## 7. Key Data Models
+
+### Order
+- `orderId`, `clientOrderId`, `accountId`, `instrumentId`
+- `side` (Buy/Sell), `type`, `timeInForce`
+- `price`, `stopPrice`, `quantity`, `remainingQuantity`
+- `status`, `createdAt`, `sequenceNumber`
+
+### PriceLevel
+- `price`
+- `totalQuantity` (depth)
+- `orderCount`
+- FIFO list of orders
+
+### OrderBook
+- `instrumentId`
+- `bids` (descending price)
+- `asks` (ascending price)
+- `lastTradePrice`, `lastTradeQuantity`
+- `tradingStatus`
+
+### Trade (Execution)
+- `tradeId`, `instrumentId`, `price`, `quantity`
+- `buyOrderId`, `sellOrderId`, `aggressorSide`
+- `sequenceNumber`, `timestamp`
+
+### Event (Journal entry)
+- `sequenceNumber`, `type`, `payload`, `timestamp`
+
+### Account
+- `accountId`, `availableBalance`, `reservedBalance`
+- `positions` (instrument → quantity + average price)
+
+---
+
+## 8. Matching Logic (Price-Time Priority)
+
+When a new order arrives (after sequencing and risk checks):
+
+1. If it is a Market order or a crossing Limit order, walk the opposite side of the book starting at the best price.
+2. At each price level, match against resting orders in FIFO (time priority) order.
+3. Generate a Trade event for every match. Reduce quantities on both sides.
+4. Remove fully filled resting orders. Keep residual quantity on the aggressor if any remains.
+5. If residual remains and Time-in-Force allows resting (GTC/Day), insert the remaining quantity into the book at its price level.
+6. If IOC → cancel any residual. If FOK and cannot fill completely → reject the entire order (no partial fills).
+7. Emit all resulting events (trades, book updates, order status changes).
+
+Stop orders are held off-book and triggered when the last trade price or BBO reaches the stop price.
+
+---
+
+## 9. Critical Design Decisions & Trade-offs
+
+| Decision              | Choice                          | Reason                                                                 | Trade-off                                      |
+|-----------------------|---------------------------------|------------------------------------------------------------------------|------------------------------------------------|
+| Matching concurrency  | Single-threaded per instrument  | Guarantees strict ordering and determinism; eliminates lock contention | Cannot scale a single instrument across cores  |
+| Order book storage    | Fully in-memory                 | Fast access and simple reasoning                                       | Requires journaling + snapshots for durability |
+| Matching rule         | Pure Price-Time (FIFO)          | Standard for spot crypto and equities; simple and fair                 | Does not support pro-rata                      |
+| Persistence           | Event journal + snapshots       | Enables exact replay and regulatory-style audit                        | Slightly more complex than direct DB updates   |
+| Risk checks           | Pre-trade, fail-closed          | Prevents invalid orders from entering the book                         | Adds latency before matching                   |
+| Market data           | Event-driven publish            | Keeps matching core clean and decoupled                                | Requires careful sequencing of messages        |
+
+---
+
+## 10. Key Flows
+
+### New Limit Order (Happy Path)
+1. Client sends order via REST.
+2. API Gateway authenticates and validates format.
+3. Risk Engine checks balance and limits.
+4. Sequencer assigns sequence number.
+5. Matching Engine attempts to match against the opposite side.
+6. Trades (if any) are generated and remaining quantity is rested.
+7. Events are written to the journal and published.
+8. Client receives acknowledgment + fill information.
+9. Market data subscribers receive trade and book updates.
+10. Accounts service updates balances and positions.
+
+### Recovery
+1. Load the latest snapshot.
+2. Replay all journal events after the snapshot sequence number.
+3. Restore exact order books, accounts, and sequence state.
+
+---
+
+## 11. API Sketch (High Level)
+
+### REST
+- `POST /v1/orders` – Place order
+- `DELETE /v1/orders/{orderId}` – Cancel
+- `GET /v1/orders/{orderId}`
+- `GET /v1/accounts/{accountId}`
+- `GET /v1/instruments/{symbol}/book?depth=10`
+- `GET /v1/instruments/{symbol}/trades`
+
+### WebSocket
+- Public: `book`, `trades`, `ticker` channels
+- Private: order updates and fills (authenticated)
+
+All mutating operations require authentication (JWT or API key).
+
+---
+
+## 12. Technology Recommendations (Flexible)
+
+- **Language:** Go or Rust (strong for concurrent, correct systems) or Java/Kotlin if preferred.
+- **In-memory structures:** Custom order book or well-tested libraries.
+- **Journal:** Append-only file or database log.
+- **API:** Native HTTP + WebSocket support of the chosen language.
+- **Persistence:** PostgreSQL for accounts and secondary indexes; Redis optional for session/cache.
+
+The design itself is language-agnostic. Correctness and clarity matter more than the specific stack.
+
+---
+
+## 13. Implementation Phases
+
+- **Phase 1** – Single instrument, Limit + Market, GTC/IOC, in-memory book, basic REST, console logging of trades.
+- **Phase 2** – Journal + snapshots + recovery, multiple instruments, cancel/replace.
+- **Phase 3** – Risk checks, accounts, positions, remaining order types.
+- **Phase 4** – WebSocket market data, private fills, simple admin endpoints.
+- **Phase 5** – Polish, tests (especially determinism/replay tests), documentation, UI integration.
+
+---
+
+## 14. Future Extensions (Post-MVP)
+
+- Perpetual futures (mark price, funding, liquidations)
+- Additional matching strategies (Strategy pattern)
+- FIX gateway
+- Primary/standby replication
+- Fee model and detailed trade reporting
+- More sophisticated risk (portfolio margin)
+
+---
+
+## 15. Summary
+
+NGGEEN is designed as a correct, deterministic, and understandable crypto matching engine. It focuses on the real core of exchange systems: the order book, price-time matching, event sourcing, and clean separation of concerns.
+
+The architecture deliberately avoids unnecessary distributed-systems complexity so that the important financial and systems concepts remain clear. This makes the project both an excellent learning vehicle and a strong, explainable portfolio piece.
