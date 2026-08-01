@@ -1,10 +1,10 @@
-package com.dawood.limit_order_book;
+package com.dawood.nggeen;
 
-import com.dawood.limit_order_book.domain.Order;
-import com.dawood.limit_order_book.domain.OrderBook;
-import com.dawood.limit_order_book.domain.enums.OrderStatus;
-import com.dawood.limit_order_book.domain.enums.OrderType;
-import com.dawood.limit_order_book.domain.enums.Side;
+import com.dawood.nggeen.domain.Order;
+import com.dawood.nggeen.domain.OrderBook;
+import com.dawood.nggeen.domain.enums.OrderStatus;
+import com.dawood.nggeen.domain.enums.OrderType;
+import com.dawood.nggeen.domain.enums.Side;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,10 +16,10 @@ import java.util.LinkedList;
 import java.util.UUID;
 
 @SpringBootApplication
-public class LimitOrderBookApplication {
+public class NggeenApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(LimitOrderBookApplication.class, args);
+        SpringApplication.run(NggeenApplication.class, args);
     }
 
     @Bean

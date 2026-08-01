@@ -1,4 +1,4 @@
-package com.dawood.limit_order_book.domain.enums;
+package com.dawood.nggeen.domain.enums;
 
 public enum OrderStatus {
     NEW,

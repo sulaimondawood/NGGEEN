@@ -1,4 +1,4 @@
-package com.dawood.limit_order_book.shared.exception;
+package com.dawood.nggeen.shared.exception;
 
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 

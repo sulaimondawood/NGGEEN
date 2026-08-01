@@ -1,8 +1,8 @@
-package com.dawood.limit_order_book.domain;
+package com.dawood.nggeen.domain;
 
-import com.dawood.limit_order_book.domain.enums.OrderStatus;
-import com.dawood.limit_order_book.domain.enums.OrderType;
-import com.dawood.limit_order_book.domain.enums.Side;
+import com.dawood.nggeen.domain.enums.OrderStatus;
+import com.dawood.nggeen.domain.enums.OrderType;
+import com.dawood.nggeen.domain.enums.Side;
 import lombok.Getter;
 
 import java.math.BigDecimal;

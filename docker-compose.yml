@@ -1,0 +1,15 @@
+services:
+  nggeen-db:
+    container_name: nggeen-db
+    image: postgres:14.20
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: nggeen-db
+    volumes:
+      - nggeen-volume:/var/lib/postgresql/data
+
+volumes:
+  nggeen-volume:
