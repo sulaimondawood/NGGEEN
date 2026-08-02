@@ -21,23 +21,34 @@ public class Order extends MetaData {
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Instrument instrument;
 
+    @Column(nullable = false, unique = true)
+    private long sequenceNo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderType orderType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderSide orderSide;
 
     private BigDecimal price;
-
     private BigDecimal stopPrice;
 
+    @Column(nullable = false)
     private BigDecimal quantity;
 
+    @Column(nullable = false)
     private BigDecimal filledQuantity;
 
+    @Column(nullable = false)
     private BigDecimal remainingQuantity;
 
-    private OrderStatus status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderSide status;
 
 }

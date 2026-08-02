@@ -6,5 +6,6 @@ public enum OrderStatus {
     PARTIALLY_FILLED,
     FILLED,
     CANCELLED,
-    EXPIRED
+    REJECTED,
+//    EXPIRED
 }
