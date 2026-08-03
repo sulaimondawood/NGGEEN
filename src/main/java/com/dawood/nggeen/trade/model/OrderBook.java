@@ -26,10 +26,8 @@ public class OrderBook {
     public void processOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) throw new IllegalArgumentException("Invalid order request");
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest);
-        OrderSide orderSide = incomingOrder.getOrderSide();
-        if (orderSide == OrderSide.BUY) {
-            orderMatchingStrategy.match(orderRequest, this);
-        }
+        orderMatchingStrategy.match(incomingOrder, this);
+
 
     }
 
@@ -47,5 +45,14 @@ public class OrderBook {
 
     public TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderBookSide(OrderSide orderSide) {
         return orderSide == OrderSide.BUY ? asks : bids;
+    }
+
+    public void addOrderToBook(Order incomingOrder) {
+        OrderSide orderSide = incomingOrder.getOrderSide();
+        TreeMap<BigDecimal, LinkedList<Order>> orderBookSide = orderSide == OrderSide.BUY ? bids : asks;
+        orderBookSide.computeIfAbsent(incomingOrder.getPrice(), (p) -> new LinkedList<>())
+                .addLast(incomingOrder);
+
+
     }
 }

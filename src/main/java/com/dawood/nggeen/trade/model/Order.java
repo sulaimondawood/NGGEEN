@@ -54,19 +54,42 @@ public class Order extends MetaData {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status;
+    private OrderStatus status = OrderStatus.PENDING_NEW;
 
     public boolean isFilled(){
         return quantity.compareTo(filledQuantity) <= 0;
     }
 
-    public boolean matchablePrice(Order incomingOrder, Order restingOrder){
-        OrderSide orderSide = incomingOrder.orderSide;
-        BigDecimal incomingOrderPrice = incomingOrder.getPrice();
-        BigDecimal restingOrderPrice = restingOrder.getPrice();
+    public void fillQuantity(BigDecimal fillQty){
+        if(fillQty == null || fillQty.compareTo(BigDecimal.ZERO) <=0){
+            throw new IllegalArgumentException("Fill amount must be greater than zero");
+        }
 
-        return orderSide == OrderSide.BUY? incomingOrderPrice.compareTo(restingOrderPrice) <= 0:
-                incomingOrderPrice.compareTo(restingOrderPrice) >= 0;
+        if(remainingQuantity == null){
+            throw new IllegalStateException("remainingQuantity not initialized");
+        }
+
+        if(fillQty.compareTo(remainingQuantity) >0){
+            throw new IllegalArgumentException("Fill amount exceeds order remaining quantity");
+        }
+
+        filledQuantity = filledQuantity.add(fillQty);
+        remainingQuantity = remainingQuantity.subtract(fillQty);
+        status = isFilled()? OrderStatus.FILLED: OrderStatus.PARTIALLY_FILLED;
+    }
+
+    public boolean isMatchablePrice( Order restingOrder){
+        OrderSide orderSide =this.orderSide;
+        BigDecimal incomingPrice = this.getPrice();
+        BigDecimal restingPrice = restingOrder.getPrice();
+        if (restingPrice == null) {
+            return false;
+        }
+
+        if(orderSide == OrderSide.BUY){
+            return incomingPrice.compareTo(restingPrice) >= 0;
+        }
+        return incomingPrice.compareTo(restingPrice) <= 0;
     }
 
 }

@@ -13,6 +13,7 @@ public class OrderMapper {
                 .price(orderRequest.getPrice())
                 .stopPrice(orderRequest.getStopPrice())
                 .quantity(orderRequest.getQuantity())
+                .remainingQuantity(orderRequest.getQuantity())
                 .build();
     }
 }
