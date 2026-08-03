@@ -2,9 +2,11 @@ package com.dawood.nggeen.trade.model;
 
 import com.dawood.nggeen.shared.model.MetaData;
 import com.dawood.nggeen.trade.enums.OrderSide;
+import com.dawood.nggeen.trade.enums.OrderStatus;
 import com.dawood.nggeen.trade.enums.OrderType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -15,6 +17,7 @@ import java.util.UUID;
 @Table(name = "orders")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Order extends MetaData {
     @Id
     @GeneratedValue
@@ -42,13 +45,13 @@ public class Order extends MetaData {
     private BigDecimal quantity;
 
     @Column(nullable = false)
-    private BigDecimal filledQuantity;
+    private BigDecimal filledQuantity = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private BigDecimal remainingQuantity;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderSide status;
+    private OrderStatus status;
 
 }
