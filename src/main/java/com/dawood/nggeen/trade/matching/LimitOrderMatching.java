@@ -13,17 +13,27 @@ import java.util.TreeMap;
 @Component(value = "limit")
 public class LimitOrderMatching implements OrderMatchingStrategy {
     @Override
-    public void match(PlaceOrderRequest orderRequest, OrderBook orderBook) {
-        OrderSide orderSide = orderRequest.getOrderSide();
+    public void match(Order incomingOrder, OrderBook orderBook) {
+        OrderSide orderSide = incomingOrder.getOrderSide();
         TreeMap<BigDecimal, LinkedList<Order>> oppositeOrders = orderBook.oppositeOrderBookSide(orderSide);
 
-        if(oppositeOrders.isEmpty()) return;
+        if (oppositeOrders.isEmpty()) return;
 
         BigDecimal bestOffer = orderBook.getBestBidOrOffer(orderSide);
         LinkedList<Order> restingOrders = oppositeOrders.get(bestOffer);
 
-        while (!restingOrders.isEmpty() && orderRequest)
+        while(!restingOrders.isEmpty() && !incomingOrder.isFilled()){
+            Order firstRestingOrder = restingOrders.getFirst();
+            boolean matchablePrice = incomingOrder.matchablePrice(incomingOrder,firstRestingOrder);
+            if(!matchablePrice) break;
+
+            BigDecimal firstRestingOrderRemainingQty = firstRestingOrder.getRemainingQuantity();
+            BigDecimal incomingOrderRemainingQty = incomingOrder.getRemainingQuantity();
+
+            BigDecimal Qty = firstRestingOrderRemainingQty.compareTo(incomingOrderRemainingQty) <= 0? firstRestingOrderRemainingQty: incomingOrderRemainingQty;
+        }
+
     }
 
 }
-}
+

@@ -2,6 +2,7 @@ package com.dawood.nggeen.trade.model;
 
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.enums.OrderSide;
+import com.dawood.nggeen.trade.mapper.OrderMapper;
 import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
 import lombok.Getter;
 
@@ -24,15 +25,16 @@ public class OrderBook {
 
     public void processOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) throw new IllegalArgumentException("Invalid order request");
-        OrderSide orderSide = orderRequest.getOrderSide();
+        Order incomingOrder = OrderMapper.toDomainOrder(orderRequest);
+        OrderSide orderSide = incomingOrder.getOrderSide();
         if (orderSide == OrderSide.BUY) {
             orderMatchingStrategy.match(orderRequest, this);
         }
 
     }
 
-    public BigDecimal getBestBidOrOffer(OrderSide orderSide){
-        return orderSide == OrderSide.BUY? getBestAsk(): getBestBid();
+    public BigDecimal getBestBidOrOffer(OrderSide orderSide) {
+        return orderSide == OrderSide.BUY ? getBestAsk() : getBestBid();
     }
 
     private BigDecimal getBestBid() {

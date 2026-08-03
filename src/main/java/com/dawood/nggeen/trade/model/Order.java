@@ -7,6 +7,7 @@ import com.dawood.nggeen.trade.enums.OrderType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -18,6 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Getter
 public class Order extends MetaData {
     @Id
     @GeneratedValue
@@ -53,5 +55,18 @@ public class Order extends MetaData {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
+
+    public boolean isFilled(){
+        return quantity.compareTo(filledQuantity) <= 0;
+    }
+
+    public boolean matchablePrice(Order incomingOrder, Order restingOrder){
+        OrderSide orderSide = incomingOrder.orderSide;
+        BigDecimal incomingOrderPrice = incomingOrder.getPrice();
+        BigDecimal restingOrderPrice = restingOrder.getPrice();
+
+        return orderSide == OrderSide.BUY? incomingOrderPrice.compareTo(restingOrderPrice) <= 0:
+                incomingOrderPrice.compareTo(restingOrderPrice) >= 0;
+    }
 
 }
