@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.TreeMap;
 
-@Component(value = "limit")
+@Component(value = "LIMIT")
 public class LimitOrderMatching implements OrderMatchingStrategy {
 
     @Override

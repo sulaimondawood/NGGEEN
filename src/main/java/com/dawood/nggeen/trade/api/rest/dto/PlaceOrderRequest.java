@@ -12,8 +12,8 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class PlaceOrderRequest {
-    @NotNull(message = "Instrument ID is required")
-    private Long instrumentId;
+    @NotNull(message = "Symbol is required")
+    private String symbol;
 
     @NotNull(message = "Order type is required (e.g. LIMIT, MARKET)")
     private OrderType orderType;

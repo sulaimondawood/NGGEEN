@@ -3,29 +3,36 @@ package com.dawood.nggeen.trade.model;
 import com.dawood.nggeen.trade.enums.OrderSide;
 import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.TreeMap;
 
 @Getter
+@Setter
 public class OrderBook {
-    private OrderMatchingStrategy orderMatchingStrategy;
+    private Map<String, OrderMatchingStrategy> matchingStrategies;
 
     private String instrument;
     private TreeMap<BigDecimal, LinkedList<Order>> bids = new TreeMap<>(Comparator.reverseOrder());
     private TreeMap<BigDecimal, LinkedList<Order>> asks = new TreeMap<>();
 
-    public OrderBook(OrderMatchingStrategy strategy) {
-        this.orderMatchingStrategy = strategy;
+    public OrderBook(Map<String, OrderMatchingStrategy> strategy) {
+        this.matchingStrategies = strategy;
     }
 
     public void processOrder(Order incomingOrder) {
-        if (incomingOrder == null) {
-            throw new IllegalArgumentException("Invalid order");
+        if (incomingOrder == null) throw new IllegalArgumentException("Invalid order");
+
+        OrderMatchingStrategy matchingStrategy = matchingStrategies.get(incomingOrder.getOrderType().name().toUpperCase());
+        if(matchingStrategy == null) {
+            throw new IllegalArgumentException("No matcher for order type: " + incomingOrder.getOrderType());
         }
-        orderMatchingStrategy.match(incomingOrder, this);
+
+        matchingStrategy.match(incomingOrder, this);
     }
 
     public BigDecimal getBestBidOrOffer(OrderSide orderSide) {

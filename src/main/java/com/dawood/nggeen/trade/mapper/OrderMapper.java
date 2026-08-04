@@ -6,7 +6,7 @@ import com.dawood.nggeen.trade.model.Order;
 public class OrderMapper {
     public static Order toDomainOrder(PlaceOrderRequest orderRequest){
         return Order.builder()
-                .instrument(null)
+                .symbol(orderRequest.getSymbol())
                 .sequenceNo(1)
                 .orderType(orderRequest.getOrderType())
                 .orderSide(orderRequest.getOrderSide())

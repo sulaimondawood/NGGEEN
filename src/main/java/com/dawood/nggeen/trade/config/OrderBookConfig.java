@@ -11,21 +11,23 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class OrderBookConfig implements CommandLineRunner {
     private final InstrumentRepository instrumentRepository;
     private final OrderBookRegistry orderBookRegistry;
-    private final OrderMatchingStrategy matchingStrategy;
+    private final Map<String, OrderMatchingStrategy> matchingStrategies;
 
     @Override
     public void run(String... args) throws Exception {
         List<Instrument> instruments = instrumentRepository.findByStatus(InstrumentStatus.TRADING);
 
-        for (Instrument instrument: instruments){
-            OrderBook orderBook = new OrderBook(matchingStrategy);
-            orderBookRegistry.addOrderBook(instrument, orderBook);
+        for (Instrument instrument : instruments) {
+            OrderBook orderBook = new OrderBook(matchingStrategies);
+            orderBook.setInstrument(instrument.getSymbol());
+            orderBookRegistry.registerOrderBook(orderBook);
         }
 
     }

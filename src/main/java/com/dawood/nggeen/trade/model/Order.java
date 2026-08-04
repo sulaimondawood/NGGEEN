@@ -26,8 +26,7 @@ public class Order extends MetaData {
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    private Instrument instrument;
+    private String symbol;
 
     @Column(nullable = false, unique = true)
     private long sequenceNo;
