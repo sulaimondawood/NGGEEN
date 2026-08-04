@@ -1,6 +1,5 @@
 package com.dawood.nggeen.trade.matching;
 
-import com.dawood.nggeen.trade.enums.OrderSide;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 import org.springframework.stereotype.Component;
