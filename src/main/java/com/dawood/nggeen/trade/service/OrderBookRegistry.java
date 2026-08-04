@@ -3,14 +3,17 @@ package com.dawood.nggeen.trade.service;
 import com.dawood.nggeen.trade.model.OrderBook;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class OrderBookRegistry {
-    private final Map<String, OrderBook> orderBooks = new HashMap<>();
+    private final Map<String, OrderBook> orderBooks = new ConcurrentHashMap<>();
 
     public void registerOrderBook(OrderBook orderBook) {
+        if (orderBook == null || orderBook.getInstrument() == null) {
+            throw new IllegalArgumentException("Invalid OrderBook or instrument symbol");
+        }
         orderBooks.put(orderBook.getInstrument(), orderBook);
     }
 
@@ -19,14 +22,15 @@ public class OrderBookRegistry {
             throw new IllegalArgumentException("Invalid symbol");
         }
 
-        if (!hasInstrument(symbol)) {
-            throw new IllegalArgumentException("Instrument not available");
+        OrderBook orderBook = orderBooks.get(symbol);
+        if (orderBook == null) {
+            throw new IllegalArgumentException("Instrument not available: " + symbol);
         }
 
-        return orderBooks.get(symbol);
+        return orderBook;
     }
 
-    private boolean hasInstrument(String symbol) {
+    public boolean hasInstrument(String symbol) {
         return orderBooks.containsKey(symbol);
     }
 }

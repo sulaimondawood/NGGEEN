@@ -7,6 +7,7 @@ import com.dawood.nggeen.trade.model.OrderBook;
 import com.dawood.nggeen.trade.repository.InstrumentRepository;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OrderBookConfig implements CommandLineRunner {
     private final InstrumentRepository instrumentRepository;
     private final OrderBookRegistry orderBookRegistry;
@@ -25,6 +27,7 @@ public class OrderBookConfig implements CommandLineRunner {
         List<Instrument> instruments = instrumentRepository.findByStatus(InstrumentStatus.TRADING);
 
         for (Instrument instrument : instruments) {
+            log.info(instrument.getSymbol());
             OrderBook orderBook = new OrderBook(matchingStrategies);
             orderBook.setInstrument(instrument.getSymbol());
             orderBookRegistry.registerOrderBook(orderBook);
