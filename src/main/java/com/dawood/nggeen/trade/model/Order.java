@@ -5,10 +5,7 @@ import com.dawood.nggeen.trade.enums.OrderSide;
 import com.dawood.nggeen.trade.enums.OrderStatus;
 import com.dawood.nggeen.trade.enums.OrderType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
@@ -20,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Getter
+@Setter
 public class Order extends MetaData {
     @Id
     @GeneratedValue
@@ -55,37 +53,36 @@ public class Order extends MetaData {
     @Column(nullable = false)
     private OrderStatus status = OrderStatus.PENDING_NEW;
 
-    public boolean isFilled(){
+    public boolean isFilled() {
         return quantity.compareTo(filledQuantity) <= 0;
     }
 
-    public void fillQuantity(BigDecimal fillQty){
-        if(fillQty == null || fillQty.compareTo(BigDecimal.ZERO) <=0){
+    public void fillQuantity(BigDecimal fillQty) {
+        if (fillQty == null || fillQty.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Fill amount must be greater than zero");
         }
 
-        if(remainingQuantity == null){
+        if (remainingQuantity == null) {
             throw new IllegalStateException("remainingQuantity not initialized");
         }
 
-        if(fillQty.compareTo(remainingQuantity) >0){
+        if (fillQty.compareTo(remainingQuantity) > 0) {
             throw new IllegalArgumentException("Fill amount exceeds order remaining quantity");
         }
 
         filledQuantity = filledQuantity.add(fillQty);
         remainingQuantity = remainingQuantity.subtract(fillQty);
-        status = isFilled()? OrderStatus.FILLED: OrderStatus.PARTIALLY_FILLED;
+        status = isFilled() ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED;
     }
 
-    public boolean isMatchablePrice( Order restingOrder){
-        OrderSide orderSide =this.orderSide;
+    public boolean isMatchablePrice(Order restingOrder) {
         BigDecimal incomingPrice = this.getPrice();
         BigDecimal restingPrice = restingOrder.getPrice();
-        if (restingPrice == null) {
+        if (restingPrice == null || incomingPrice == null) {
             return false;
         }
 
-        if(orderSide == OrderSide.BUY){
+        if (this.orderSide == OrderSide.BUY) {
             return incomingPrice.compareTo(restingPrice) >= 0;
         }
         return incomingPrice.compareTo(restingPrice) <= 0;

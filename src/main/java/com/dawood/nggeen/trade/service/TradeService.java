@@ -2,7 +2,6 @@ package com.dawood.nggeen.trade.service;
 
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.mapper.OrderMapper;
-import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 import lombok.RequiredArgsConstructor;
@@ -11,8 +10,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class TradeService {
-
-    private final OrderMatchingStrategy matchingStrategy;
     private final OrderBookRegistry orderBookRegistry;
 
     public void processIncomingOrder(PlaceOrderRequest orderRequest) {
@@ -21,7 +18,7 @@ public class TradeService {
         }
         OrderBook instrumentOrderBook = orderBookRegistry.getByInstrumentSymbol(orderRequest.getSymbol());
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest);
-        matchingStrategy.match(incomingOrder, instrumentOrderBook);
+        instrumentOrderBook.processOrder(incomingOrder);
 
     }
 
