@@ -52,6 +52,8 @@ public class OrderBook {
     }
 
     public void addOrderToBook(Order incomingOrder) {
+        if(incomingOrder == null)  throw new IllegalArgumentException("Invalid order");
+
         OrderSide orderSide = incomingOrder.getOrderSide();
         TreeMap<BigDecimal, LinkedList<Order>> orderBookSide = orderSide == OrderSide.BUY ? bids : asks;
         orderBookSide.computeIfAbsent(incomingOrder.getPrice(), (p) -> new LinkedList<>())
