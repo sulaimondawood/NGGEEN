@@ -19,7 +19,7 @@ class MarketOrderMatchingTest {
     private OrderBook orderBook;
 
     @BeforeEach
-    void setup(){
+    void setup() {
         marketOrderMatching = new MarketOrderMatching();
         orderBook = new OrderBook(Map.of());
     }
@@ -36,7 +36,7 @@ class MarketOrderMatchingTest {
     }
 
     @Test
-    void shouldFullyMatchMarketBuyOrderAgainstSingleRestingSellOrderWithoutRemainQty(){
+    void shouldFullyMatchMarketBuyOrderAgainstSingleRestingSellOrderWithoutRemainQty() {
         Order restingSellOrder = createOrder(OrderSide.SELL, "5.0", "1000.0");
         orderBook.addOrderToBook(restingSellOrder);
         Order incomingMarketBuy = createOrder(OrderSide.BUY, "5.0", "1000.0");
@@ -55,7 +55,7 @@ class MarketOrderMatchingTest {
     }
 
     @Test
-    void shouldFullyMatchMarketBuyOrderAgainstSingleRestingSellOrderWithRemainQty(){
+    void shouldFullyMatchMarketBuyOrderAgainstSingleRestingSellOrderWithRemainQty() {
         Order restingSellOrder = createOrder(OrderSide.SELL, "10.0", "1000.0");
         orderBook.addOrderToBook(restingSellOrder);
         Order incomingMarketBuy = createOrder(OrderSide.BUY, "5.0", "1000.0");
@@ -74,4 +74,44 @@ class MarketOrderMatchingTest {
 
     }
 
+    @Test
+    void shouldSweepMultiplePriceLevelsForLargeMarketOrder() {
+        Order incomingMarketBuy = createOrder(OrderSide.BUY, "5", "1150.0");
+
+        Order ask1 = createOrder(OrderSide.SELL, "3", "1200.0");
+        Order ask2 = createOrder(OrderSide.SELL, "1", "1100.0");
+        Order ask3 = createOrder(OrderSide.SELL, "5", "1100.0");
+
+        orderBook.addOrderToBook(ask1);
+        orderBook.addOrderToBook(ask2);
+        orderBook.addOrderToBook(ask3);
+
+
+        marketOrderMatching.match(incomingMarketBuy,orderBook);
+
+        assertTrue(incomingMarketBuy.isFilled());
+        assertEquals(new BigDecimal("0"), incomingMarketBuy.getRemainingQuantity());
+        assertEquals(new BigDecimal("5"), incomingMarketBuy.getFilledQuantity());
+
+        assertFalse(ask1.isFilled());
+        assertTrue(orderBook.getAsks().containsKey(new BigDecimal("1200.0")));
+        assertEquals(new BigDecimal("3"), ask1.getRemainingQuantity());
+        assertEquals(new BigDecimal("0"), ask1.getFilledQuantity());
+
+        assertTrue(ask2.isFilled());
+        assertEquals(new BigDecimal("0"), ask2.getRemainingQuantity());
+        assertEquals(new BigDecimal("1"), ask2.getFilledQuantity());
+
+        assertFalse(ask3.isFilled());
+        assertTrue(orderBook.getAsks().containsKey(new BigDecimal("1100.0")));
+        assertEquals(1, orderBook.getAsks().get(new BigDecimal("1100.0")).size());
+        assertEquals(new BigDecimal("1"), ask3.getRemainingQuantity());
+        assertEquals(new BigDecimal("4"), ask3.getFilledQuantity());
+
+    }
+
+    @Test
+    void shouldCancelRemainOrderQtyNotFilledDueToVeryLowDepth(){
+
+    }
 }

@@ -11,18 +11,18 @@ import java.util.LinkedList;
 import java.util.TreeMap;
 
 @Component(value = "MARKET")
-public class MarketOrderMatching implements OrderMatchingStrategy{
+public class MarketOrderMatching implements OrderMatchingStrategy {
     @Override
     public void match(Order incomingOrder, OrderBook orderBook) {
         OrderSide orderSide = incomingOrder.getOrderSide();
         TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderSide = orderBook.oppositeOrderBookSide(orderSide);
 
-        while (!oppositeOrderSide.isEmpty() && !incomingOrder.isFilled()){
+        while (!oppositeOrderSide.isEmpty() && !incomingOrder.isFilled()) {
             BigDecimal bestOffer = orderBook.getBestBidOrOffer(orderSide);
-            if(bestOffer == null) break;
+            if (bestOffer == null) break;
 
             LinkedList<Order> restingOrdersAtPriceLevel = oppositeOrderSide.get(bestOffer);
-            if(restingOrdersAtPriceLevel.isEmpty()){
+            if (restingOrdersAtPriceLevel.isEmpty()) {
                 oppositeOrderSide.remove(bestOffer);
                 continue;
             }
@@ -32,15 +32,16 @@ public class MarketOrderMatching implements OrderMatchingStrategy{
             restingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
 
-            if(restingOrder.isFilled()){
+            if (restingOrder.isFilled()) {
                 restingOrdersAtPriceLevel.removeFirst();
             }
-            if(restingOrdersAtPriceLevel.isEmpty()){
+
+            if (restingOrdersAtPriceLevel.isEmpty()) {
                 oppositeOrderSide.remove(bestOffer);
             }
         }
 
-        if(!incomingOrder.isFilled()){
+        if (!incomingOrder.isFilled()) {
             handleResidualCancellation(incomingOrder);
         }
 
