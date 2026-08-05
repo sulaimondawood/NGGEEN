@@ -110,7 +110,7 @@ class OrderBookTest {
         }
 
         @Test
-        void getBestBidOrOfferShouldReturnBestOfferForSellOrder() {
+        void getBestBidOrOfferShouldReturnBestBidForSellOrder() {
 
             Order buy1 = new Order();
             buy1.setPrice(new BigDecimal("2000"));
@@ -195,7 +195,7 @@ class OrderBookTest {
         }
 
         @Test
-        void addOrderToBookShouldSuccessfullyAddBuyOrderToAsks(){
+        void addOrderToBookShouldSuccessfullyAddSellOrderToAsks(){
             Order ask = new Order();
             ask.setPrice(new BigDecimal("1000"));
             ask.setOrderSide(OrderSide.SELL);
