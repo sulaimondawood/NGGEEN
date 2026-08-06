@@ -1,10 +1,14 @@
+server:
+  servlet:
+    context-path: /api/v1
 spring:
   application:
     name: nggeen
   datasource:
     username: postgres
     password: admin
-    url: jdbc:postgreql://localhost:5432/nggeen
+    url: jdbc:postgresql://localhost:5432/nggeen-db
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update

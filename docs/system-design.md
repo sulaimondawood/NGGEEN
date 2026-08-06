@@ -285,13 +285,135 @@ The design itself is language-agnostic. Correctness and clarity matter more than
 
 ## 13. Implementation Phases
 
-- **Phase 1** – Single instrument, Limit + Market, GTC/IOC, in-memory book, basic REST, console logging of trades.
-- **Phase 2** – Journal + snapshots + recovery, multiple instruments, cancel/replace.
-- **Phase 3** – Risk checks, accounts, positions, remaining order types.
-- **Phase 4** – WebSocket market data, private fills, simple admin endpoints.
-- **Phase 5** – Polish, tests (especially determinism/replay tests), documentation, UI integration.
+## Phase 1: Core Matching Engine (Foundation)
+
+**Goal:** Build a correct in-memory order book that can match orders.
+
+### Scope
+- `Order` basic model
+- `OrderBook` (bids and asks)
+- Price-time priority matching
+- Supported order types:
+    - Limit
+    - Market
+- Time-in-Force:
+    - GTC
+    - IOC
+- Operations:
+    - Place order
+    - Cancel order
+- Console output of trades and order book state
+
+### Learning Focus
+- Price levels and depth
+- Aggressor vs resting orders
+- Partial fills
+- Basic order book data structures
+
+### Done When
+You can place buy/sell orders, see them rest or match, and cancel them. Everything still lives only in memory.
 
 ---
+
+## Phase 2: Determinism & Recovery
+
+**Goal:** Make the engine crash-safe and fully deterministic.
+
+### Scope
+- Sequence numbers for every command
+- Event Journal (append-only log)
+- Domain Events (`OrderAccepted`, `TradeExecuted`, `OrderCancelled`, etc.)
+- OrderBook snapshots
+- Recovery process (load snapshot + replay journal)
+
+### Learning Focus
+- Event Sourcing
+- Why matching engines must be deterministic
+- How real exchanges recover after failures
+
+### Done When
+You can restart the application and the order book returns to the exact same state.
+
+---
+
+## Phase 3: Multiple Instruments + Expanded Order Types
+
+**Goal:** Make the system feel like a real multi-market exchange.
+
+### Scope
+- Support multiple trading pairs (e.g. BTC-USDT, ETH-USDT)
+- Additional order types:
+    - FOK (Fill-or-Kill)
+    - Stop
+    - Stop-Limit (basic)
+- Time-in-Force: Day
+- Self-trade prevention (simple version)
+- Basic instrument rules (tick size, minimum quantity)
+
+### Done When
+Multiple markets can run at the same time and the main order types behave correctly.
+
+---
+
+## Phase 4: Accounts, Balances & Pre-Trade Risk
+
+**Goal:** Add the financial control layer.
+
+### Scope
+- Account model (available balance + positions)
+- Fund reservation when placing orders
+- Balance and position updates on trades
+- Basic pre-trade risk checks:
+    - Sufficient balance
+    - Simple position limits
+- Reject orders that fail risk checks
+
+### Learning Focus
+- Available vs reserved balance
+- How exchanges prevent users from over-spending
+
+### Done When
+Orders are only accepted when the account can afford them, and balances update correctly after trades.
+
+---
+
+## Phase 5: APIs (REST + WebSocket)
+
+**Goal:** Expose the engine to external clients.
+
+### Scope
+- REST API:
+    - Place order
+    - Cancel order
+    - Get order
+    - Get order book (Level 2)
+    - Get account balance and positions
+- WebSocket:
+    - Public market data (BBO, depth, trades)
+    - Private order updates and fills
+- Basic authentication (JWT or API keys)
+
+### Done When
+You can place orders and watch the order book update in real time from an external client.
+
+---
+
+## Phase 6: Polish & Portfolio Ready
+
+**Goal:** Make the project clean, testable, and presentable.
+
+### Scope
+- Clean project structure (DDD-style)
+- Proper error handling
+- Structured logging
+- Basic metrics
+- Unit tests (especially matching logic)
+- Determinism / replay tests
+- README with architecture explanation
+- Optional simple UI or demo script
+
+### Done When
+You can confidently explain, demo, and show the code in a technical interview.
 
 ## 14. Future Extensions (Post-MVP)
 
