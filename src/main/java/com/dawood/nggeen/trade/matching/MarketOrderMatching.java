@@ -19,7 +19,9 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
 
         while (!oppositeOrderSide.isEmpty() && !incomingOrder.isFilled()) {
             BigDecimal bestOffer = orderBook.getBestBidOrOffer(orderSide);
-            if (bestOffer == null) break;
+            if (bestOffer == null) {
+                break;
+            };
 
             LinkedList<Order> restingOrdersAtPriceLevel = oppositeOrderSide.get(bestOffer);
             if (restingOrdersAtPriceLevel.isEmpty()) {

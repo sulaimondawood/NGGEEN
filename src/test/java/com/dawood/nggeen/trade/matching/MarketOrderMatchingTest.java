@@ -111,7 +111,44 @@ class MarketOrderMatchingTest {
     }
 
     @Test
-    void shouldCancelRemainOrderQtyNotFilledDueToVeryLowDepth(){
+    void shouldMarkOrderAsPartiallyFilledWhenDepthIsInsufficient(){
+        Order incomingBuyOrder = createOrder(OrderSide.BUY, "5.0", "1000");
+        Order restingAsk1 = createOrder(OrderSide.SELL, "3.0", "1000");
+        orderBook.addOrderToBook(restingAsk1);
 
+        marketOrderMatching.match(incomingBuyOrder,orderBook);
+
+        assertEquals(OrderStatus.PARTIALLY_FILLED, incomingBuyOrder.getStatus());
+        assertEquals(new BigDecimal("3.0"), incomingBuyOrder.getFilledQuantity());
+        assertEquals(new BigDecimal("2.0"), incomingBuyOrder.getRemainingQuantity());
+
+        assertTrue(orderBook.getAsks().isEmpty());
+    }
+
+    @Test
+    void shouldNotRunMatchingOrderEngineIfThereAreNoOrdersInBook(){
+        Order incomingMarketBuy = createOrder(OrderSide.BUY, "5.0", "1000.0");
+
+        marketOrderMatching.match(incomingMarketBuy, orderBook);
+
+        assertEquals(new BigDecimal("5.0"), incomingMarketBuy.getRemainingQuantity());
+        assertEquals(new BigDecimal("0"), incomingMarketBuy.getFilledQuantity());
+        assertEquals(OrderStatus.CANCELED, incomingMarketBuy.getStatus());
+    }
+
+    @Test
+    void shouldSkipAndRemoveEmptyPriceLevelQueueInBook() {
+        Order restingAsk = createOrder(OrderSide.SELL, "5.0", "1200.0");
+        orderBook.addOrderToBook(restingAsk);
+
+        orderBook.getAsks().put(new BigDecimal("1100.0"), new LinkedList<>());
+
+        Order incomingMarketBuy = createOrder(OrderSide.BUY, "5.0", null);
+
+        marketOrderMatching.match(incomingMarketBuy, orderBook);
+
+        assertTrue(incomingMarketBuy.isFilled());
+        assertFalse(orderBook.getAsks().containsKey(new BigDecimal("1100.0"))); // Key removed
+        assertTrue(orderBook.getAsks().isEmpty()); // Book clean
     }
 }
