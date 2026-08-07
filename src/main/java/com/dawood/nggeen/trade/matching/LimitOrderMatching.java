@@ -40,11 +40,18 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
 
             if (firstRestingOrder.isFilled()) {
                 restingOrders.removeFirst();
+                if (firstRestingOrder.getId() != null) {
+                    orderBook.getOrderMap().remove(firstRestingOrder.getId());
+                }
             }
             if(restingOrders.isEmpty()){
                 oppositeOrders.remove(bestOffer);
             }
 
+        }
+
+        if (incomingOrder.isFilled() && incomingOrder.getId() != null) {
+            orderBook.getOrderMap().remove(incomingOrder.getId());
         }
 
         if(!incomingOrder.isFilled()){

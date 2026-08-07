@@ -36,6 +36,9 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
 
             if (restingOrder.isFilled()) {
                 restingOrdersAtPriceLevel.removeFirst();
+                if (restingOrder.getId() != null) {
+                    orderBook.getOrderMap().remove(restingOrder.getId());
+                }
             }
 
             if (restingOrdersAtPriceLevel.isEmpty()) {
