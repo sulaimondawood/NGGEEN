@@ -1,20 +1,34 @@
 package com.dawood.nggeen.trade.service;
 
 import com.dawood.nggeen.trade.model.OrderBook;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 @Component
 public class OrderBookRegistry {
     private final Map<String, OrderBook> orderBooks = new ConcurrentHashMap<>();
+    private Map<String, ExecutorService> executors = new ConcurrentHashMap<>();
+
 
     public void registerOrderBook(OrderBook orderBook) {
         if (orderBook == null || orderBook.getInstrument() == null) {
             throw new IllegalArgumentException("Invalid OrderBook or instrument symbol");
         }
-        orderBooks.put(orderBook.getInstrument(), orderBook);
+        String symbol = orderBook.getInstrument();
+        orderBooks.put(symbol, orderBook);
+
+        ExecutorService executorService = new ThreadPoolExecutor(
+                1, 1,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingDeque<>(10_000),
+                threadFactory(symbol),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+
+        executors.put(symbol, executorService);
     }
 
     public OrderBook getByInstrumentSymbol(String symbol) {
@@ -30,7 +44,36 @@ public class OrderBookRegistry {
         return orderBook;
     }
 
-    public boolean hasInstrument(String symbol) {
-        return orderBooks.containsKey(symbol);
+    public ExecutorService getExecutorFor(String symbol) {
+        ExecutorService executor = executors.get(symbol);
+        if (executor == null) {
+            throw new IllegalArgumentException("No thread executor configured for instrument: " + symbol);
+        }
+        return executor;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        executors.values().forEach(executor -> {
+            executor.shutdown();
+            try {
+                // Wait up to 5 seconds for pending matching tasks in queue to finish
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        });
+    }
+
+    private ThreadFactory threadFactory(String symbol) {
+        return r -> {
+            Thread thread = new Thread(r);
+            thread.setName("engine-matching-" + symbol);
+            thread.setDaemon(true);
+            return thread;
+        };
     }
 }

@@ -7,7 +7,6 @@ public class OrderMapper {
     public static Order toDomainOrder(PlaceOrderRequest orderRequest){
         return Order.builder()
                 .symbol(orderRequest.getSymbol())
-                .sequenceNo(1)
                 .orderType(orderRequest.getOrderType())
                 .orderSide(orderRequest.getOrderSide())
                 .price(orderRequest.getPrice())

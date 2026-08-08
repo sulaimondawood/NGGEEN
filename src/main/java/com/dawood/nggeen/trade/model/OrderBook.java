@@ -3,6 +3,7 @@ package com.dawood.nggeen.trade.model;
 import com.dawood.nggeen.trade.enums.OrderSide;
 import com.dawood.nggeen.trade.enums.OrderStatus;
 import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
+import com.dawood.nggeen.trade.service.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Setter
 public class OrderBook {
     private Map<String, OrderMatchingStrategy> matchingStrategies;
+    private SequenceGenerator sequenceGenerator = new SequenceGenerator();
 
     private String instrument;
     private TreeMap<BigDecimal, LinkedList<Order>> bids = new TreeMap<>(Comparator.reverseOrder());
@@ -37,18 +39,6 @@ public class OrderBook {
 
     public BigDecimal getBestBidOrOffer(OrderSide orderSide) {
         return orderSide == OrderSide.BUY ? getBestAsk() : getBestBid();
-    }
-
-    private BigDecimal getBestBid() {
-        return bids.isEmpty() ? null : bids.firstKey();
-    }
-
-    private BigDecimal getBestAsk() {
-        return asks.isEmpty() ? null : asks.firstKey();
-    }
-
-    public TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderBookSide(OrderSide orderSide) {
-        return orderSide == OrderSide.BUY ? asks : bids;
     }
 
     public void addOrderToBook(Order incomingOrder) {
@@ -92,4 +82,17 @@ public class OrderBook {
         pendingOrder.setStatus(OrderStatus.CANCELED);
         orderMap.remove(orderId);
     }
+
+    public TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderBookSide(OrderSide orderSide) {
+        return orderSide == OrderSide.BUY ? asks : bids;
+    }
+
+    private BigDecimal getBestBid() {
+        return bids.isEmpty() ? null : bids.firstKey();
+    }
+
+    private BigDecimal getBestAsk() {
+        return asks.isEmpty() ? null : asks.firstKey();
+    }
+
 }

@@ -20,7 +20,7 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             if (bestOffer == null) break;
 
             LinkedList<Order> restingOrders = oppositeOrders.get(bestOffer);
-            if(restingOrders ==null || restingOrders.isEmpty()){
+            if (restingOrders == null || restingOrders.isEmpty()) {
                 oppositeOrders.remove(bestOffer);
                 continue;
             }
@@ -33,7 +33,8 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             BigDecimal firstRestingOrderRemainingQty = firstRestingOrder.getRemainingQuantity();
             BigDecimal incomingOrderRemainingQty = incomingOrder.getRemainingQuantity();
 
-            BigDecimal matchedQty = firstRestingOrderRemainingQty.compareTo(incomingOrderRemainingQty) <= 0 ? firstRestingOrderRemainingQty : incomingOrderRemainingQty;
+            BigDecimal matchedQty = firstRestingOrderRemainingQty.compareTo(incomingOrderRemainingQty) <= 0 ?
+                    firstRestingOrderRemainingQty : incomingOrderRemainingQty;
 
             firstRestingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
@@ -44,7 +45,7 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
                     orderBook.getOrderMap().remove(firstRestingOrder.getId());
                 }
             }
-            if(restingOrders.isEmpty()){
+            if (restingOrders.isEmpty()) {
                 oppositeOrders.remove(bestOffer);
             }
 
@@ -54,7 +55,7 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             orderBook.getOrderMap().remove(incomingOrder.getId());
         }
 
-        if(!incomingOrder.isFilled()){
+        if (!incomingOrder.isFilled()) {
             orderBook.addOrderToBook(incomingOrder);
         }
 

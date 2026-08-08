@@ -20,8 +20,7 @@ import java.util.UUID;
 @Setter
 public class Order extends MetaData {
     @Id
-    @GeneratedValue
-    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+    @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
     private String symbol;
@@ -44,6 +43,7 @@ public class Order extends MetaData {
     private BigDecimal quantity;
 
     @Column(nullable = false)
+    @Builder.Default
     private BigDecimal filledQuantity = BigDecimal.ZERO;
 
     @Column(nullable = false)
@@ -51,6 +51,7 @@ public class Order extends MetaData {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private OrderStatus status = OrderStatus.PENDING_NEW;
 
     public boolean isFilled() {
