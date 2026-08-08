@@ -2,6 +2,7 @@ package com.dawood.nggeen.trade.matching;
 
 import com.dawood.nggeen.trade.enums.OrderSide;
 import com.dawood.nggeen.trade.enums.OrderStatus;
+import com.dawood.nggeen.trade.event.TradeExecuted;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 import org.springframework.stereotype.Component;
@@ -29,10 +30,12 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
                 continue;
             }
 
+
             Order restingOrder = restingOrdersAtPriceLevel.getFirst();
             BigDecimal matchedQty = restingOrder.getRemainingQuantity().min(incomingOrder.getRemainingQuantity());
             restingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
+
 
             if (restingOrder.isFilled()) {
                 restingOrdersAtPriceLevel.removeFirst();

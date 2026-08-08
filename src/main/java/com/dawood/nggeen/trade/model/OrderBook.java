@@ -9,7 +9,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
@@ -20,7 +19,7 @@ public class OrderBook {
     private String instrument;
     private TreeMap<BigDecimal, LinkedList<Order>> bids = new TreeMap<>(Comparator.reverseOrder());
     private TreeMap<BigDecimal, LinkedList<Order>> asks = new TreeMap<>();
-    private Map<UUID, Order> orderMap = new ConcurrentHashMap<>();
+    private Map<UUID, Order> orderMap = new HashMap<>();
 
     public OrderBook(Map<String, OrderMatchingStrategy> strategy) {
         this.matchingStrategies = strategy;

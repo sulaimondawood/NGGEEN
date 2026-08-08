@@ -5,8 +5,6 @@ import com.dawood.nggeen.trade.model.OrderBook;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 @Service
@@ -14,8 +12,20 @@ import java.util.concurrent.ExecutorService;
 public class TradeExecutionDispatcher {
     private final OrderBookRegistry orderBookRegistry;
 
-    public void dispatch(OrderBook instrumentOrderBook, Order incomingOrder){
-        instrumentOrderBook.processOrder(incomingOrder);
+    public void dispatch(OrderBook instrumentOrderBook, Order incomingOrder) {
+        String symbol = incomingOrder.getSymbol();
+        ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);
+
+        executor.submit(() -> {
+            try {
+                long seq = instrumentOrderBook.getSequenceGenerator().next();
+                incomingOrder.setSequenceNo(seq);
+                instrumentOrderBook.processOrder(incomingOrder);
+            } catch (Exception e) {
+                System.err.printf("Error matching order %s on %s: %s%n",
+                        incomingOrder.getId(), symbol, e.getMessage());
+            }
+        });
 
     }
 

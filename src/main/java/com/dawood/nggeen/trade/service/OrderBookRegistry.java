@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 @Component
 public class OrderBookRegistry {
     private final Map<String, OrderBook> orderBooks = new ConcurrentHashMap<>();
-    private Map<String, ExecutorService> executors = new ConcurrentHashMap<>();
+    private final Map<String, ExecutorService> executors = new ConcurrentHashMap<>();
 
 
     public void registerOrderBook(OrderBook orderBook) {
