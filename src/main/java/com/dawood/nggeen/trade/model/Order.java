@@ -4,9 +4,11 @@ import com.dawood.nggeen.shared.model.MetaData;
 import com.dawood.nggeen.trade.enums.OrderSide;
 import com.dawood.nggeen.trade.enums.OrderStatus;
 import com.dawood.nggeen.trade.enums.OrderType;
+import com.dawood.nggeen.trade.event.AggregateEvent;
+import com.dawood.nggeen.trade.event.OrderAccepted;
+import com.dawood.nggeen.trade.event.OrderCancelled;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -54,6 +56,11 @@ public class Order extends MetaData {
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING_NEW;
 
+    @Transient
+    @Getter(value = AccessLevel.NONE)
+    @Builder.Default
+    private AggregateEvent events = new AggregateEvent();
+
     public boolean isFilled() {
         return quantity.compareTo(filledQuantity) <= 0;
     }
@@ -87,6 +94,29 @@ public class Order extends MetaData {
             return incomingPrice.compareTo(restingPrice) >= 0;
         }
         return incomingPrice.compareTo(restingPrice) <= 0;
+    }
+
+    public OrderAccepted markAccepted(long seq) {
+        this.status = OrderStatus.NEW;
+        OrderAccepted event = new OrderAccepted(
+                id,
+                seq,
+                symbol,
+                price,
+                stopPrice,
+                quantity,
+                orderSide,
+                orderType);
+
+        events.registerEvent(event);
+        return event;
+    }
+
+    public OrderCancelled markCancelled(){
+        status = OrderStatus.CANCELED;
+        OrderCancelled event = new OrderCancelled(
+
+        )
     }
 
 }

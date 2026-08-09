@@ -1,7 +1,9 @@
 package com.dawood.nggeen.trade.service;
 
+import com.dawood.nggeen.trade.event.OrderAccepted;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
+import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ public class TradeExecutionDispatcher {
             try {
                 long seq = instrumentOrderBook.getSequenceGenerator().next();
                 incomingOrder.setSequenceNo(seq);
+
                 instrumentOrderBook.processOrder(incomingOrder);
             } catch (Exception e) {
                 System.err.printf("Error matching order %s on %s: %s%n",

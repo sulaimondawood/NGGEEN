@@ -37,6 +37,7 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
             incomingOrder.fillQuantity(matchedQty);
 
 
+
             if (restingOrder.isFilled()) {
                 restingOrdersAtPriceLevel.removeFirst();
                 if (restingOrder.getId() != null) {
