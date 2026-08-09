@@ -1,21 +1,28 @@
 package com.dawood.nggeen.trade.application;
 
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
-import com.dawood.nggeen.trade.enums.OrderStatus;
+import com.dawood.nggeen.trade.event.DomainEvent;
 import com.dawood.nggeen.trade.mapper.OrderMapper;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
+import com.dawood.nggeen.trade.repository.OrderRepository;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
-import com.dawood.nggeen.trade.service.TradeExecutionDispatcher;
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TradeApplicationService {
     private final OrderBookRegistry orderBookRegistry;
-    private final TradeExecutionDispatcher tradeExecutionDispatcher;
+    private final OrderRepository orderRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public void processIncomingOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) {
@@ -23,12 +30,31 @@ public class TradeApplicationService {
         }
 
         OrderBook instrumentOrderBook = orderBookRegistry.getByInstrumentSymbol(orderRequest.getSymbol());
-
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest);
         incomingOrder.setId(UuidCreator.getTimeOrderedEpoch());
-        incomingOrder.setStatus(OrderStatus.NEW);
 
-        tradeExecutionDispatcher.dispatch(instrumentOrderBook, incomingOrder);
+        String symbol = incomingOrder.getSymbol();
+        ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);
+
+        executor.submit(() -> {
+            try {
+                long seq = instrumentOrderBook.getSequenceGenerator().next();
+
+                incomingOrder.markAccepted(seq);
+
+                instrumentOrderBook.processOrder(incomingOrder);
+
+                List<DomainEvent> events = incomingOrder.domainEvents();
+
+                events.forEach(applicationEventPublisher::publishEvent);
+
+//                orderRepository.save();
+
+            } catch (Exception e) {
+                log.error("Failed to process order {} on symbol {}", incomingOrder.getId(), symbol, e);
+            }
+        });
+
 
     }
 

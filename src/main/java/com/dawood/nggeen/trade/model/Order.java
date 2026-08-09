@@ -1,16 +1,16 @@
 package com.dawood.nggeen.trade.model;
 
 import com.dawood.nggeen.shared.model.MetaData;
+import com.dawood.nggeen.trade.enums.CancelReason;
 import com.dawood.nggeen.trade.enums.OrderSide;
 import com.dawood.nggeen.trade.enums.OrderStatus;
 import com.dawood.nggeen.trade.enums.OrderType;
-import com.dawood.nggeen.trade.event.AggregateEvent;
-import com.dawood.nggeen.trade.event.OrderAccepted;
-import com.dawood.nggeen.trade.event.OrderCancelled;
+import com.dawood.nggeen.trade.event.*;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -26,9 +26,6 @@ public class Order extends MetaData {
     private UUID id;
 
     private String symbol;
-
-    @Column(nullable = false, unique = true)
-    private long sequenceNo;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -96,9 +93,9 @@ public class Order extends MetaData {
         return incomingPrice.compareTo(restingPrice) <= 0;
     }
 
-    public OrderAccepted markAccepted(long seq) {
+    public DomainEvent markAccepted(long seq) {
         this.status = OrderStatus.NEW;
-        OrderAccepted event = new OrderAccepted(
+        DomainEvent event = new OrderAccepted(
                 id,
                 seq,
                 symbol,
@@ -112,11 +109,28 @@ public class Order extends MetaData {
         return event;
     }
 
-    public OrderCancelled markCancelled(){
-        status = OrderStatus.CANCELED;
-        OrderCancelled event = new OrderCancelled(
+    public DomainEvent markCancelled(long seq,
+                                        BigDecimal quantityCancelled,
+                                        CancelReason reason,
+                                        OrderStatus status) {
+        this.status = status;
+        DomainEvent event = new OrderCancelled(
+                id,
+                seq,
+                symbol,
+                quantityCancelled,
+                reason
+        );
 
-        )
+        events.registerEvent(event);
+        return event;
     }
 
+    public void registerEvent(DomainEvent event){
+        events.registerEvent(event);
+    }
+
+    public List<DomainEvent> domainEvents(){
+       return events.getRegisteredEvents();
+    }
 }
