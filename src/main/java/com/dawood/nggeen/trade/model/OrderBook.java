@@ -1,19 +1,20 @@
 package com.dawood.nggeen.trade.model;
 
-import com.dawood.nggeen.trade.event.DomainEvent;
-import com.dawood.nggeen.trade.model.enums.CancelReason;
+import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
 import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
-import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
 import com.dawood.nggeen.trade.service.SequenceGenerator;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.*;
 
 @Getter
 @Setter
+@Slf4j
 public class OrderBook {
     private Map<String, OrderMatchingStrategy> matchingStrategies;
     private SequenceGenerator sequenceGenerator = new SequenceGenerator();
@@ -23,7 +24,8 @@ public class OrderBook {
     private TreeMap<BigDecimal, LinkedList<Order>> asks = new TreeMap<>();
     private Map<UUID, Order> orderMap = new HashMap<>();
 
-    private Set<Order> dirtyOrders = new
+    @Getter(AccessLevel.NONE)
+    private Set<Order> dirtyOrders = new LinkedHashSet<>();
 
     public OrderBook(Map<String, OrderMatchingStrategy> strategy) {
         this.matchingStrategies = strategy;
@@ -34,7 +36,6 @@ public class OrderBook {
         if (matchingStrategy == null) {
             throw new IllegalArgumentException("No matcher for order type: " + incomingOrder.getOrderType());
         }
-
         matchingStrategy.match(incomingOrder, this);
     }
 
@@ -96,4 +97,15 @@ public class OrderBook {
         return asks.isEmpty() ? null : asks.firstKey();
     }
 
+    public void trackDirtyOrders(Order order){
+        if (order != null) {
+            this.dirtyOrders.add(order);
+        }
+    }
+
+    public List<Order> getAndClearDirtyOrders(){
+        List<Order> dirtyOrdersCopy = new ArrayList<>(dirtyOrders);
+        dirtyOrders.clear();
+        return dirtyOrdersCopy;
+    }
 }

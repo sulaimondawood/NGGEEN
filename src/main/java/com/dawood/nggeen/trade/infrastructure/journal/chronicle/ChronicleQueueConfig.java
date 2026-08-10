@@ -11,7 +11,7 @@ import java.io.File;
 
 @Configuration
 public class ChronicleQueueConfig {
-    @Value("${app.journal.path:./data/chronicle/journal}")
+    @Value("${nggeen.journal.path:./data/chronicle/journal}")
     private String journalPath;
 
     @Bean(destroyMethod = "close")

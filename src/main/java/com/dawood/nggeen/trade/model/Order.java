@@ -12,6 +12,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -26,7 +27,11 @@ public class Order extends MetaData {
     @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
+    @Column(nullable = false)
     private String symbol;
+
+    @Column(nullable = false, unique = true)
+    private long sequenceNo;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -116,4 +121,15 @@ public class Order extends MetaData {
         );
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Order order = (Order) o;
+        return Objects.equals(id, order.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

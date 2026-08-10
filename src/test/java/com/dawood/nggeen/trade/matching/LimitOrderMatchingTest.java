@@ -1,11 +1,16 @@
 package com.dawood.nggeen.trade.matching;
 
+import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
@@ -13,8 +18,15 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(MockitoExtension.class)
 class LimitOrderMatchingTest {
-    private final OrderMatchingStrategy limitOrderMatchingStrategy = new LimitOrderMatching();
+
+    @Mock
+    private ChronicleQueueService chronicleQueueService;
+
+    @InjectMocks
+    private OrderMatchingStrategy limitOrderMatchingStrategy;
+
     private final OrderBook orderBook = new OrderBook(Map.of());
 
     private Order createOrder(OrderSide side, String qty, String price) {

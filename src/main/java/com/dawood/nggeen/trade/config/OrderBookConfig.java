@@ -27,7 +27,6 @@ public class OrderBookConfig implements CommandLineRunner {
         List<Instrument> instruments = instrumentRepository.findByStatus(InstrumentStatus.TRADING);
 
         for (Instrument instrument : instruments) {
-            log.info(instrument.getSymbol());
             OrderBook orderBook = new OrderBook(matchingStrategies);
             orderBook.setInstrument(instrument.getSymbol());
             orderBookRegistry.registerOrderBook(orderBook);

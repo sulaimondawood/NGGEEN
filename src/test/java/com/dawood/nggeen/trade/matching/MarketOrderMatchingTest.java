@@ -1,11 +1,16 @@
 package com.dawood.nggeen.trade.matching;
 
+import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
@@ -13,14 +18,17 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(MockitoExtension.class)
 class MarketOrderMatchingTest {
 
+    @Mock
+    private ChronicleQueueService chronicleQueueService;
+    @InjectMocks
     private MarketOrderMatching marketOrderMatching;
     private OrderBook orderBook;
 
     @BeforeEach
     void setup() {
-        marketOrderMatching = new MarketOrderMatching();
         orderBook = new OrderBook(Map.of());
     }
 

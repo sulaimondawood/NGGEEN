@@ -9,6 +9,7 @@ import com.dawood.nggeen.trade.model.enums.EventType;
 import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 @Component(value = "LIMIT")
 @RequiredArgsConstructor
+@Slf4j
 public class LimitOrderMatching implements OrderMatchingStrategy {
     private final ChronicleQueueService chronicleQueueService;
 
@@ -49,8 +51,15 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             firstRestingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
 
+            orderBook.trackDirtyOrders(incomingOrder);
+            orderBook.trackDirtyOrders(firstRestingOrder);
+
             OrderSide orderSide = incomingOrder.getOrderSide();
             long tradeSeq = orderBook.getSequenceGenerator().next();
+
+            log.info(String.valueOf(tradeSeq));
+            System.out.println(tradeSeq);
+
             UUID tradeId = UuidCreator.getTimeOrderedEpoch();
             UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : firstRestingOrder.getId();
             UUID sellOrderId = (orderSide == OrderSide.SELL) ? incomingOrder.getId() : firstRestingOrder.getId();
