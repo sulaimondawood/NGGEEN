@@ -1,6 +1,6 @@
 package com.dawood.nggeen.trade.event;
 
-import com.dawood.nggeen.trade.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,7 +16,7 @@ public record TradeExecuted(
         BigDecimal price,
         BigDecimal quantity,
         OrderSide aggressorSide
-) implements DomainEvent{
+) implements DomainEvent {
     public TradeExecuted(  long sequenceNo,
                            UUID tradeId,
                            UUID buyOrderId,

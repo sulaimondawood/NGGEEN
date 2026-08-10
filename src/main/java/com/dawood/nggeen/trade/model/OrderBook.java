@@ -1,9 +1,9 @@
 package com.dawood.nggeen.trade.model;
 
-import com.dawood.nggeen.trade.enums.CancelReason;
-import com.dawood.nggeen.trade.enums.OrderSide;
-import com.dawood.nggeen.trade.enums.OrderStatus;
-import com.dawood.nggeen.trade.event.TradeExecuted;
+import com.dawood.nggeen.trade.event.DomainEvent;
+import com.dawood.nggeen.trade.model.enums.CancelReason;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
 import com.dawood.nggeen.trade.service.SequenceGenerator;
 import lombok.Getter;
@@ -23,6 +23,8 @@ public class OrderBook {
     private TreeMap<BigDecimal, LinkedList<Order>> asks = new TreeMap<>();
     private Map<UUID, Order> orderMap = new HashMap<>();
 
+    private Set<Order> dirtyOrders = new
+
     public OrderBook(Map<String, OrderMatchingStrategy> strategy) {
         this.matchingStrategies = strategy;
     }
@@ -30,11 +32,6 @@ public class OrderBook {
     public void processOrder(Order incomingOrder) {
         OrderMatchingStrategy matchingStrategy = matchingStrategies.get(incomingOrder.getOrderType().name().toUpperCase());
         if (matchingStrategy == null) {
-            long seq = this.sequenceGenerator.next();
-            CancelReason reason = CancelReason.INVALID_MARKET_ORDER_TYPE;
-            BigDecimal quantityCancelled = incomingOrder.getQuantity();
-
-            incomingOrder.markCancelled(seq, quantityCancelled, reason, OrderStatus.CANCELED);
             throw new IllegalArgumentException("No matcher for order type: " + incomingOrder.getOrderType());
         }
 

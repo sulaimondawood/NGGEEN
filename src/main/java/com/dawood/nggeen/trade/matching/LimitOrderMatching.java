@@ -1,15 +1,25 @@
 package com.dawood.nggeen.trade.matching;
 
+import com.dawood.nggeen.trade.event.DomainEvent;
+import com.dawood.nggeen.trade.event.TradeExecuted;
+import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
+import com.dawood.nggeen.trade.model.enums.EventType;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.github.f4b6a3.uuid.UuidCreator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.TreeMap;
+import java.util.UUID;
 
 @Component(value = "LIMIT")
+@RequiredArgsConstructor
 public class LimitOrderMatching implements OrderMatchingStrategy {
+    private final ChronicleQueueService chronicleQueueService;
 
     @Override
     public void match(Order incomingOrder, OrderBook orderBook) {
@@ -38,6 +48,24 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
 
             firstRestingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
+
+            OrderSide orderSide = incomingOrder.getOrderSide();
+            long tradeSeq = orderBook.getSequenceGenerator().next();
+            UUID tradeId = UuidCreator.getTimeOrderedEpoch();
+            UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : firstRestingOrder.getId();
+            UUID sellOrderId = (orderSide == OrderSide.SELL) ? incomingOrder.getId() : firstRestingOrder.getId();
+
+            DomainEvent tradedEvent = new TradeExecuted(
+                    tradeSeq,
+                    tradeId,
+                    buyOrderId,
+                    sellOrderId,
+                    incomingOrder.getSymbol(),
+                    bestOffer,
+                    matchedQty,
+                    orderSide
+            );
+            chronicleQueueService.appendEvent(EventType.TradeExecutedEvent, tradedEvent);
 
             if (firstRestingOrder.isFilled()) {
                 restingOrders.removeFirst();

@@ -2,10 +2,12 @@ package com.dawood.nggeen.trade.application;
 
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.event.DomainEvent;
+import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.mapper.OrderMapper;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
-import com.dawood.nggeen.trade.repository.OrderRepository;
+import com.dawood.nggeen.trade.infrastructure.persistence.OrderRepository;
+import com.dawood.nggeen.trade.model.enums.EventType;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ import java.util.concurrent.ExecutorService;
 public class TradeApplicationService {
     private final OrderBookRegistry orderBookRegistry;
     private final OrderRepository orderRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final ChronicleQueueService chronicleQueueService;
 
     public void processIncomingOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) {
@@ -40,13 +42,10 @@ public class TradeApplicationService {
             try {
                 long seq = instrumentOrderBook.getSequenceGenerator().next();
 
-                incomingOrder.markAccepted(seq);
+                DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
+                chronicleQueueService.appendEvent(EventType.OrderAcceptedEvent, acceptedEvent);
 
                 instrumentOrderBook.processOrder(incomingOrder);
-
-                List<DomainEvent> events = incomingOrder.domainEvents();
-
-                events.forEach(applicationEventPublisher::publishEvent);
 
 //                orderRepository.save();
 

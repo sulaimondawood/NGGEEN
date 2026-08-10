@@ -1,7 +1,7 @@
 package com.dawood.nggeen.trade.api.rest.dto;
 
-import com.dawood.nggeen.trade.enums.OrderSide;
-import com.dawood.nggeen.trade.enums.OrderType;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;

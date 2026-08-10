@@ -1,4 +1,4 @@
-package com.dawood.nggeen.trade.enums;
+package com.dawood.nggeen.trade.model.enums;
 
 public enum OrderStatus {
     PENDING_NEW,

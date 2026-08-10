@@ -1,13 +1,16 @@
 package com.dawood.nggeen.trade.matching;
 
-import com.dawood.nggeen.trade.enums.CancelReason;
-import com.dawood.nggeen.trade.enums.OrderSide;
-import com.dawood.nggeen.trade.enums.OrderStatus;
 import com.dawood.nggeen.trade.event.DomainEvent;
 import com.dawood.nggeen.trade.event.TradeExecuted;
+import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
+import com.dawood.nggeen.trade.model.enums.CancelReason;
+import com.dawood.nggeen.trade.model.enums.EventType;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.github.f4b6a3.uuid.UuidCreator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -16,7 +19,10 @@ import java.util.TreeMap;
 import java.util.UUID;
 
 @Component(value = "MARKET")
+@RequiredArgsConstructor
 public class MarketOrderMatching implements OrderMatchingStrategy {
+    private final ChronicleQueueService chronicleQueueService;
+
     @Override
     public void match(Order incomingOrder, OrderBook orderBook) {
         OrderSide orderSide = incomingOrder.getOrderSide();
@@ -44,7 +50,7 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
             UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : restingOrder.getId();
             UUID sellOrderId = (orderSide == OrderSide.SELL) ? incomingOrder.getId() : restingOrder.getId();
 
-            DomainEvent event = new TradeExecuted(
+            DomainEvent tradedEvent = new TradeExecuted(
                     tradeSeq,
                     tradeId,
                     buyOrderId,
@@ -54,7 +60,9 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
                     matchedQty,
                     orderSide
             );
-            incomingOrder.registerEvent(event);
+
+            chronicleQueueService.appendEvent(EventType.TradeExecutedEvent, tradedEvent);
+//            incomingOrder.registerEvent(tradedEvent);
 
             if (restingOrder.isFilled()) {
                 restingOrdersAtPriceLevel.removeFirst();
@@ -84,7 +92,7 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
         OrderStatus finalStatus = incomingOrder.getFilledQuantity().compareTo(BigDecimal.ZERO) > 0
                 ? OrderStatus.PARTIALLY_FILLED
                 : OrderStatus.CANCELED;
-        incomingOrder.markCancelled(seq, quantityCancelled, reason, finalStatus);
-//         TODO: Emit event to release unexecuted reserved wallet funds
+      DomainEvent canceledEvent = incomingOrder.markCancelled(seq, quantityCancelled, reason, finalStatus);
+      chronicleQueueService.appendEvent(EventType.OrderCancelledEvent,canceledEvent);
     }
 }

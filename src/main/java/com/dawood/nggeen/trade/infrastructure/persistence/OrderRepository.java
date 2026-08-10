@@ -1,4 +1,4 @@
-package com.dawood.nggeen.trade.repository;
+package com.dawood.nggeen.trade.infrastructure.persistence;
 
 import com.dawood.nggeen.trade.model.Order;
 import org.springframework.data.jpa.repository.JpaRepository;

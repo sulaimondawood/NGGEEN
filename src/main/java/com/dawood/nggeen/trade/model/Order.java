@@ -1,16 +1,17 @@
 package com.dawood.nggeen.trade.model;
 
 import com.dawood.nggeen.shared.model.MetaData;
-import com.dawood.nggeen.trade.enums.CancelReason;
-import com.dawood.nggeen.trade.enums.OrderSide;
-import com.dawood.nggeen.trade.enums.OrderStatus;
-import com.dawood.nggeen.trade.enums.OrderType;
-import com.dawood.nggeen.trade.event.*;
+import com.dawood.nggeen.trade.event.DomainEvent;
+import com.dawood.nggeen.trade.event.OrderAccepted;
+import com.dawood.nggeen.trade.event.OrderCancelled;
+import com.dawood.nggeen.trade.model.enums.CancelReason;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderStatus;
+import com.dawood.nggeen.trade.model.enums.OrderType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -53,11 +54,6 @@ public class Order extends MetaData {
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING_NEW;
 
-    @Transient
-    @Getter(value = AccessLevel.NONE)
-    @Builder.Default
-    private AggregateEvent events = new AggregateEvent();
-
     public boolean isFilled() {
         return quantity.compareTo(filledQuantity) <= 0;
     }
@@ -95,7 +91,7 @@ public class Order extends MetaData {
 
     public DomainEvent markAccepted(long seq) {
         this.status = OrderStatus.NEW;
-        DomainEvent event = new OrderAccepted(
+        return new OrderAccepted(
                 id,
                 seq,
                 symbol,
@@ -104,9 +100,6 @@ public class Order extends MetaData {
                 quantity,
                 orderSide,
                 orderType);
-
-        events.registerEvent(event);
-        return event;
     }
 
     public DomainEvent markCancelled(long seq,
@@ -114,23 +107,13 @@ public class Order extends MetaData {
                                         CancelReason reason,
                                         OrderStatus status) {
         this.status = status;
-        DomainEvent event = new OrderCancelled(
+        return new OrderCancelled(
                 id,
                 seq,
                 symbol,
                 quantityCancelled,
                 reason
         );
-
-        events.registerEvent(event);
-        return event;
     }
 
-    public void registerEvent(DomainEvent event){
-        events.registerEvent(event);
-    }
-
-    public List<DomainEvent> domainEvents(){
-       return events.getRegisteredEvents();
-    }
 }

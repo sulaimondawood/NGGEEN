@@ -1,6 +1,6 @@
 package com.dawood.nggeen.trade.model;
 
-import com.dawood.nggeen.trade.enums.InstrumentStatus;
+import com.dawood.nggeen.trade.model.enums.InstrumentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

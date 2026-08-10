@@ -1,7 +1,7 @@
 package com.dawood.nggeen.trade.event;
 
-import com.dawood.nggeen.trade.enums.OrderSide;
-import com.dawood.nggeen.trade.enums.OrderType;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderType;
 
 import java.math.BigDecimal;
 import java.time.Instant;

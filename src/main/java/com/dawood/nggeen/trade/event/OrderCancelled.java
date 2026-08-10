@@ -1,6 +1,6 @@
 package com.dawood.nggeen.trade.event;
 
-import com.dawood.nggeen.trade.enums.CancelReason;
+import com.dawood.nggeen.trade.model.enums.CancelReason;
 
 import java.math.BigDecimal;
 import java.time.Instant;
