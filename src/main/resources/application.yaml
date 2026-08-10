@@ -12,3 +12,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+nggeen:
+  journal:
+    path: ./data/chronicle/journal

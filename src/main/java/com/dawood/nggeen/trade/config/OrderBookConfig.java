@@ -1,10 +1,10 @@
 package com.dawood.nggeen.trade.config;
 
-import com.dawood.nggeen.trade.enums.InstrumentStatus;
+import com.dawood.nggeen.trade.model.enums.InstrumentStatus;
 import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
 import com.dawood.nggeen.trade.model.Instrument;
 import com.dawood.nggeen.trade.model.OrderBook;
-import com.dawood.nggeen.trade.repository.InstrumentRepository;
+import com.dawood.nggeen.trade.infrastructure.persistence.InstrumentRepository;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,6 @@ public class OrderBookConfig implements CommandLineRunner {
         List<Instrument> instruments = instrumentRepository.findByStatus(InstrumentStatus.TRADING);
 
         for (Instrument instrument : instruments) {
-            log.info(instrument.getSymbol());
             OrderBook orderBook = new OrderBook(matchingStrategies);
             orderBook.setInstrument(instrument.getSymbol());
             orderBookRegistry.registerOrderBook(orderBook);

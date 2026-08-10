@@ -1,14 +1,18 @@
 package com.dawood.nggeen.trade.model;
 
 import com.dawood.nggeen.shared.model.MetaData;
-import com.dawood.nggeen.trade.enums.OrderSide;
-import com.dawood.nggeen.trade.enums.OrderStatus;
-import com.dawood.nggeen.trade.enums.OrderType;
+import com.dawood.nggeen.trade.event.DomainEvent;
+import com.dawood.nggeen.trade.event.OrderAccepted;
+import com.dawood.nggeen.trade.event.OrderCancelled;
+import com.dawood.nggeen.trade.model.enums.CancelReason;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderStatus;
+import com.dawood.nggeen.trade.model.enums.OrderType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -20,10 +24,10 @@ import java.util.UUID;
 @Setter
 public class Order extends MetaData {
     @Id
-    @GeneratedValue
-    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+    @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
+    @Column(nullable = false)
     private String symbol;
 
     @Column(nullable = false, unique = true)
@@ -44,6 +48,7 @@ public class Order extends MetaData {
     private BigDecimal quantity;
 
     @Column(nullable = false)
+    @Builder.Default
     private BigDecimal filledQuantity = BigDecimal.ZERO;
 
     @Column(nullable = false)
@@ -51,6 +56,7 @@ public class Order extends MetaData {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private OrderStatus status = OrderStatus.PENDING_NEW;
 
     public boolean isFilled() {
@@ -88,4 +94,42 @@ public class Order extends MetaData {
         return incomingPrice.compareTo(restingPrice) <= 0;
     }
 
+    public DomainEvent markAccepted(long seq) {
+        this.status = OrderStatus.NEW;
+        return new OrderAccepted(
+                id,
+                seq,
+                symbol,
+                price,
+                stopPrice,
+                quantity,
+                orderSide,
+                orderType);
+    }
+
+    public DomainEvent markCancelled(long seq,
+                                        BigDecimal quantityCancelled,
+                                        CancelReason reason,
+                                        OrderStatus status) {
+        this.status = status;
+        return new OrderCancelled(
+                id,
+                seq,
+                symbol,
+                quantityCancelled,
+                reason
+        );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Order order = (Order) o;
+        return Objects.equals(id, order.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

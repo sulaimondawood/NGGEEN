@@ -1,17 +1,28 @@
 package com.dawood.nggeen.trade.matching;
 
-import com.dawood.nggeen.trade.enums.OrderSide;
-import com.dawood.nggeen.trade.enums.OrderStatus;
+import com.dawood.nggeen.trade.event.DomainEvent;
+import com.dawood.nggeen.trade.event.TradeExecuted;
+import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
+import com.dawood.nggeen.trade.model.enums.CancelReason;
+import com.dawood.nggeen.trade.model.enums.EventType;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
+import com.dawood.nggeen.trade.model.enums.OrderStatus;
+import com.github.f4b6a3.uuid.UuidCreator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.TreeMap;
+import java.util.UUID;
 
 @Component(value = "MARKET")
+@RequiredArgsConstructor
 public class MarketOrderMatching implements OrderMatchingStrategy {
+    private final ChronicleQueueService chronicleQueueService;
+
     @Override
     public void match(Order incomingOrder, OrderBook orderBook) {
         OrderSide orderSide = incomingOrder.getOrderSide();
@@ -21,7 +32,7 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
             BigDecimal bestOffer = orderBook.getBestBidOrOffer(orderSide);
             if (bestOffer == null) {
                 break;
-            };
+            }
 
             LinkedList<Order> restingOrdersAtPriceLevel = oppositeOrderSide.get(bestOffer);
             if (restingOrdersAtPriceLevel.isEmpty()) {
@@ -34,27 +45,56 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
             restingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
 
+            orderBook.trackDirtyOrders(incomingOrder);
+            orderBook.trackDirtyOrders(restingOrder);
+
+            long tradeSeq = orderBook.getSequenceGenerator().next();
+            UUID tradeId = UuidCreator.getTimeOrderedEpoch();
+            UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : restingOrder.getId();
+            UUID sellOrderId = (orderSide == OrderSide.SELL) ? incomingOrder.getId() : restingOrder.getId();
+
+            DomainEvent tradedEvent = new TradeExecuted(
+                    tradeSeq,
+                    tradeId,
+                    buyOrderId,
+                    sellOrderId,
+                    incomingOrder.getSymbol(),
+                    bestOffer,
+                    matchedQty,
+                    orderSide
+            );
+
+            chronicleQueueService.appendEvent(EventType.TradeExecutedEvent, tradedEvent);
+
             if (restingOrder.isFilled()) {
                 restingOrdersAtPriceLevel.removeFirst();
+                if (restingOrder.getId() != null) {
+                    orderBook.getOrderMap().remove(restingOrder.getId());
+                }
             }
 
             if (restingOrdersAtPriceLevel.isEmpty()) {
                 oppositeOrderSide.remove(bestOffer);
             }
+
         }
 
         if (!incomingOrder.isFilled()) {
-            handleResidualCancellation(incomingOrder);
+            long cancelSeq = orderBook.getSequenceGenerator().next();
+             handleResidualCancellation(
+                    incomingOrder,
+                    cancelSeq,
+                    incomingOrder.getRemainingQuantity(),
+                    CancelReason.NO_LIQUIDITY);
         }
 
     }
 
-    private void handleResidualCancellation(Order incomingOrder) {
+    private void handleResidualCancellation(Order incomingOrder, long seq, BigDecimal quantityCancelled, CancelReason reason) {
         OrderStatus finalStatus = incomingOrder.getFilledQuantity().compareTo(BigDecimal.ZERO) > 0
                 ? OrderStatus.PARTIALLY_FILLED
                 : OrderStatus.CANCELED;
-        incomingOrder.setStatus(finalStatus);
-
-//         TODO: Emit event to release unexecuted reserved wallet funds
+      DomainEvent canceledEvent = incomingOrder.markCancelled(seq, quantityCancelled, reason, finalStatus);
+      chronicleQueueService.appendEvent(EventType.OrderCancelledEvent,canceledEvent);
     }
 }
