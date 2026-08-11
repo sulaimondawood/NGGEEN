@@ -40,7 +40,6 @@ public class TradeApplicationService {
         executor.submit(() -> {
             try {
                 long seq = instrumentOrderBook.getSequenceGenerator().next();
-                incomingOrder.setSequenceNo(seq);
 
                 DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
                 chronicleQueueService.appendEvent(EventType.OrderAcceptedEvent, acceptedEvent);

@@ -30,9 +30,6 @@ public class Order extends MetaData {
     @Column(nullable = false)
     private String symbol;
 
-    @Column(nullable = false, unique = true)
-    private long sequenceNo;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderType orderType;
