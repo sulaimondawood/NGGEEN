@@ -11,7 +11,6 @@ import net.openhft.chronicle.wire.Marshallable;
 import net.openhft.chronicle.wire.ValueIn;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 

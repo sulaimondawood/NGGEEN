@@ -1,7 +1,5 @@
-package com.dawood.nggeen.trade.matching;
+package com.dawood.nggeen.trade.engine;
 
-import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
-import com.dawood.nggeen.trade.event.DomainEvent;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 
