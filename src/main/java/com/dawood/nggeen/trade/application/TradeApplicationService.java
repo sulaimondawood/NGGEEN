@@ -37,13 +37,22 @@ public class TradeApplicationService {
         String symbol = incomingOrder.getSymbol();
         ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);
 
+        instrumentOrderBook.getBids().forEach((val,orders)->{
+            System.out.println(val);
+            orders.forEach(order->{
+                System.out.println(order.getPrice());
+                System.out.println(order.getQuantity());
+                System.out.println(order.getRemainingQuantity());
+                System.out.println(order.isFilled());
+            });
+        });
+
         executor.submit(() -> {
             try {
                 long seq = instrumentOrderBook.getSequenceGenerator().next();
-                incomingOrder.setSequenceNo(seq);
 
                 DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
-                chronicleQueueService.appendEvent(EventType.OrderAcceptedEvent, acceptedEvent);
+                chronicleQueueService.appendEvent(EventType.OrderAccepted, acceptedEvent);
 
                 instrumentOrderBook.trackDirtyOrders(incomingOrder);
 

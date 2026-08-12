@@ -30,9 +30,6 @@ public class Order extends MetaData {
     @Column(nullable = false)
     private String symbol;
 
-    @Column(nullable = false, unique = true)
-    private long sequenceNo;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderType orderType;
@@ -108,9 +105,9 @@ public class Order extends MetaData {
     }
 
     public DomainEvent markCancelled(long seq,
-                                        BigDecimal quantityCancelled,
-                                        CancelReason reason,
-                                        OrderStatus status) {
+                                     BigDecimal quantityCancelled,
+                                     CancelReason reason,
+                                     OrderStatus status) {
         this.status = status;
         return new OrderCancelled(
                 id,
@@ -119,6 +116,22 @@ public class Order extends MetaData {
                 quantityCancelled,
                 reason
         );
+    }
+
+    public static Order buildOrderFromEvent(OrderAccepted event) {
+        if(event == null){
+            throw new IllegalArgumentException("OrderAccepted event must not be null");
+        }
+        return Order.builder()
+                .id(event.getOrderId())
+                .symbol(event.symbol())
+                .orderType(event.getOrderType())
+                .orderSide(event.getOrderSide())
+                .price(event.getPrice())
+                .stopPrice(event.getStopPrice())
+                .quantity(event.getQuantity())
+                .remainingQuantity(event.getQuantity())
+                .build();
     }
 
     @Override

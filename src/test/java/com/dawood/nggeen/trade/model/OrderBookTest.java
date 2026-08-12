@@ -2,7 +2,7 @@ package com.dawood.nggeen.trade.model;
 
 import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderType;
-import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
+import com.dawood.nggeen.trade.engine.OrderMatchingStrategy;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;

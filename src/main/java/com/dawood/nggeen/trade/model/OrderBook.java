@@ -1,8 +1,13 @@
 package com.dawood.nggeen.trade.model;
 
-import com.dawood.nggeen.trade.matching.OrderMatchingStrategy;
+import com.dawood.nggeen.trade.engine.OrderMatchingStrategy;
+import com.dawood.nggeen.trade.event.DomainEvent;
+import com.dawood.nggeen.trade.event.OrderAccepted;
+import com.dawood.nggeen.trade.event.OrderCancelled;
+import com.dawood.nggeen.trade.event.TradeExecuted;
 import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
+import com.dawood.nggeen.trade.model.enums.OrderType;
 import com.dawood.nggeen.trade.service.SequenceGenerator;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -83,10 +88,44 @@ public class OrderBook {
 
         pendingOrder.setStatus(OrderStatus.CANCELED);
         orderMap.remove(orderId);
+
     }
 
     public TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderBookSide(OrderSide orderSide) {
         return orderSide == OrderSide.BUY ? asks : bids;
+    }
+
+    public TreeMap<BigDecimal, LinkedList<Order>> getOrderBookSide(OrderSide orderSide) {
+        return orderSide == OrderSide.BUY ? bids : asks;
+    }
+
+    public void trackDirtyOrders(Order order) {
+        if (order != null) {
+            this.dirtyOrders.add(order);
+        }
+    }
+
+    public List<Order> getAndClearDirtyOrders() {
+        List<Order> dirtyOrdersCopy = new ArrayList<>(dirtyOrders);
+        dirtyOrders.clear();
+        return dirtyOrdersCopy;
+    }
+
+    public void rebuildOrderBookFromEventHistory(DomainEvent event) {
+        if(event == null){
+            return;
+        }
+        sequenceGenerator.updateIfGreater(event.sequenceNo());
+        switch (event) {
+            case OrderAccepted accepted -> replayOrderAccepted(accepted);
+
+            case TradeExecuted traded -> replayTradeExecuted(traded);
+
+            case OrderCancelled cancelled -> replayOrderCancelled(cancelled);
+
+          default -> log.debug("Unhandled event type during replay: {}", event.getClass().getSimpleName());
+        }
+
     }
 
     private BigDecimal getBestBid() {
@@ -97,15 +136,58 @@ public class OrderBook {
         return asks.isEmpty() ? null : asks.firstKey();
     }
 
-    public void trackDirtyOrders(Order order){
-        if (order != null) {
-            this.dirtyOrders.add(order);
+    private void replayOrderAccepted(OrderAccepted event) {
+        Order order = Order.buildOrderFromEvent(event);
+        if (order.getOrderType() == OrderType.LIMIT) {
+            addOrderToBook(order);
         }
     }
 
-    public List<Order> getAndClearDirtyOrders(){
-        List<Order> dirtyOrdersCopy = new ArrayList<>(dirtyOrders);
-        dirtyOrders.clear();
-        return dirtyOrdersCopy;
+    private void replayTradeExecuted(TradeExecuted event) {
+        Order buyOrder = orderMap.get(event.getBuyOrderId());
+        if (buyOrder != null) {
+            buyOrder.fillQuantity(event.getExecutedQuantity());
+
+            if (buyOrder.isFilled()) {
+                removeOrderFromBook(buyOrder);
+            }
+        }
+
+        Order sellOrder = orderMap.get(event.getSellOrderId());
+        if (sellOrder != null) {
+            sellOrder.fillQuantity(event.getExecutedQuantity());
+
+            if (sellOrder.isFilled()) {
+                removeOrderFromBook(sellOrder);
+            }
+        }
     }
+
+    private void replayOrderCancelled(OrderCancelled event) {
+        Order order = orderMap.get(event.getOrderId());
+        if (order == null) {
+            return;
+        }
+        removeOrderFromBook(order);
+    }
+
+    private void removeOrderFromBook(Order order) {
+        TreeMap<BigDecimal, LinkedList<Order>> orderBookSide =
+                getOrderBookSide(order.getOrderSide());
+
+        LinkedList<Order> ordersAtPrice = orderBookSide.get(order.getPrice());
+
+        if (ordersAtPrice == null) {
+            return;
+        }
+
+        ordersAtPrice.remove(order);
+
+        if (ordersAtPrice.isEmpty()) {
+            orderBookSide.remove(order.getPrice());
+        }
+
+        orderMap.remove(order.getId());
+    }
+
 }

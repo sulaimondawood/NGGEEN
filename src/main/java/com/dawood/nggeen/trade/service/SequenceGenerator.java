@@ -3,7 +3,15 @@ package com.dawood.nggeen.trade.service;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SequenceGenerator {
-    private final AtomicLong sequence = new AtomicLong(0);
+    private AtomicLong sequence;
+
+    public SequenceGenerator() {
+        this(0L);
+    }
+
+    public SequenceGenerator(long initialSequence) {
+        this.sequence = new AtomicLong(initialSequence);
+    }
 
     public long next() {
         return sequence.incrementAndGet();
@@ -11,6 +19,12 @@ public class SequenceGenerator {
 
     public long current() {
         return sequence.get();
+    }
+
+    public void updateIfGreater(long seq) {
+        sequence.updateAndGet(
+                current -> Math.max(current, seq)
+        );
     }
 
 }
