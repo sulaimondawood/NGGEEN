@@ -21,4 +21,10 @@ public class SequenceGenerator {
         return sequence.get();
     }
 
+    public void updateIfGreater(long seq) {
+        sequence.updateAndGet(
+                current -> Math.max(current, seq)
+        );
+    }
+
 }

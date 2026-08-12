@@ -112,6 +112,7 @@ public class OrderBook {
     }
 
     public void rebuildOrderBookFromEventHistory(DomainEvent event) {
+        sequenceGenerator.updateIfGreater(event.sequenceNo());
         switch (event) {
             case null -> {
                 return;

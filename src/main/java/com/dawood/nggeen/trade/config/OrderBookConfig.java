@@ -29,12 +29,7 @@ public class OrderBookConfig implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        Map<String, Long> maxSequences = new HashMap<>();
-        chronicleQueueService.replay((eventType, event) -> {
-            if (event != null && event.symbol() != null) {
-                maxSequences.merge(event.symbol(), event.sequenceNo(), Math::max);
-            }
-        });
+        Map<String,OrderBook> orderBooks = new HashMap<>();
 
         List<Instrument> instruments = instrumentRepository.findByStatus(InstrumentStatus.TRADING);
         for (Instrument instrument : instruments) {
@@ -43,11 +38,28 @@ public class OrderBookConfig implements CommandLineRunner {
             String symbol = instrument.getSymbol();
             orderBook.setInstrument(symbol);
 
-            long maxSeq = maxSequences.getOrDefault(symbol, 0L);
-            orderBook.setSequenceGenerator(new SequenceGenerator(maxSeq));
+            orderBooks.put(symbol, orderBook);
+        }
 
+        chronicleQueueService.replay((eventType, event) -> {
+            if (event == null || event.symbol() == null) {
+                log.error("Event type or Order event is null");
+                return;
+            }
+
+            OrderBook orderBook = orderBooks.get(event.symbol());
+            if (orderBook == null) {
+                log.error("No OrderBook found for {}", event.symbol());
+                return;
+            }
+
+            orderBook.rebuildOrderBookFromEventHistory(event);
+
+        });
+
+        for (OrderBook orderBook: orderBooks.values()){
             orderBookRegistry.registerOrderBook(orderBook);
-            log.info("Registered OrderBook [{}] with starting sequence baseline: {}", symbol, maxSeq);
+            log.info("Registered OrderBook [{}] with starting sequence baseline: {}", orderBook.getInstrument(), orderBook.getSequenceGenerator().current());
         }
     }
 
