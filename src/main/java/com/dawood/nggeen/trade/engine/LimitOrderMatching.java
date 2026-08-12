@@ -74,9 +74,10 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
                     matchedQty,
                     orderSide
             );
-            chronicleQueueService.appendEvent(EventType.TradeExecutedEvent, tradedEvent);
+            chronicleQueueService.appendEvent(EventType.TradeExecuted, tradedEvent);
 
             if (firstRestingOrder.isFilled()) {
+                System.out.println("Filled");
                 restingOrders.removeFirst();
                 if (firstRestingOrder.getId() != null) {
                     orderBook.getOrderMap().remove(firstRestingOrder.getId());

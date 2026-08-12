@@ -64,7 +64,7 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
                     orderSide
             );
 
-            chronicleQueueService.appendEvent(EventType.TradeExecutedEvent, tradedEvent);
+            chronicleQueueService.appendEvent(EventType.TradeExecuted, tradedEvent);
 
             if (restingOrder.isFilled()) {
                 restingOrdersAtPriceLevel.removeFirst();
@@ -95,6 +95,6 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
                 ? OrderStatus.PARTIALLY_FILLED
                 : OrderStatus.CANCELED;
       DomainEvent canceledEvent = incomingOrder.markCancelled(seq, quantityCancelled, reason, finalStatus);
-      chronicleQueueService.appendEvent(EventType.OrderCancelledEvent,canceledEvent);
+      chronicleQueueService.appendEvent(EventType.OrderCancelled,canceledEvent);
     }
 }

@@ -34,27 +34,34 @@ public class ChronicleQueueService {
         ExcerptTailer tailer = createTailer().toStart();
         while (true) {
             try (DocumentContext dc = tailer.readingDocument()) {
+                System.out.println(dc.isPresent());
                 if (!dc.isPresent()) {
                     break;
                 }
 
-                ValueIn valueIn = dc.wire().read();
-                String eventType = valueIn.text();
-                DomainEvent event = (DomainEvent) valueIn.typedMarshallable();
+                String eventType = dc.wire().read("eventType").text();
+                System.out.println(eventType);
+                DomainEvent event = (DomainEvent) dc.wire().read("event").typedMarshallable();
+                System.out.println(event);
 
                 if (event != null) {
                     eventConsumer.accept(eventType, event);
                 }
             } catch (Exception e) {
                 log.error("Error reading event from Chronicle Queue at index: {}", tailer.index(), e);
+                break;
             }
         }
     }
 
     private void writeEvent(String eventType, Marshallable event) {
         ExcerptAppender appender = threadAppender.get();
-        appender.writeDocument(w -> w.write(eventType)
-                .typedMarshallable(event));
+        appender.writeDocument(w -> {
+            w.write("eventType")
+                            .text(eventType);
+            w.write("event")
+                    .typedMarshallable(event);
+        });
     }
 
     private ExcerptAppender excerptAppender() {

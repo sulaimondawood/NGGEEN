@@ -112,19 +112,18 @@ public class OrderBook {
     }
 
     public void rebuildOrderBookFromEventHistory(DomainEvent event) {
+        if(event == null){
+            return;
+        }
         sequenceGenerator.updateIfGreater(event.sequenceNo());
         switch (event) {
-            case null -> {
-                return;
-            }
             case OrderAccepted accepted -> replayOrderAccepted(accepted);
 
             case TradeExecuted traded -> replayTradeExecuted(traded);
 
             case OrderCancelled cancelled -> replayOrderCancelled(cancelled);
 
-            default -> {
-            }
+          default -> log.debug("Unhandled event type during replay: {}", event.getClass().getSimpleName());
         }
 
     }

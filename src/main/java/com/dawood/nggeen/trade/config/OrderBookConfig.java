@@ -6,6 +6,7 @@ import com.dawood.nggeen.trade.engine.OrderMatchingStrategy;
 import com.dawood.nggeen.trade.model.Instrument;
 import com.dawood.nggeen.trade.model.OrderBook;
 import com.dawood.nggeen.trade.infrastructure.persistence.InstrumentRepository;
+import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
 import com.dawood.nggeen.trade.service.SequenceGenerator;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,7 @@ public class OrderBookConfig implements CommandLineRunner {
 
         for (OrderBook orderBook: orderBooks.values()){
             orderBookRegistry.registerOrderBook(orderBook);
+            System.out.println(orderBook.getBestBidOrOffer(OrderSide.BUY));
             log.info("Registered OrderBook [{}] with starting sequence baseline: {}", orderBook.getInstrument(), orderBook.getSequenceGenerator().current());
         }
     }
