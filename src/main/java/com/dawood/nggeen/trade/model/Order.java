@@ -66,7 +66,7 @@ public class Order extends MetaData {
         }
 
         if (remainingQuantity == null) {
-            throw new IllegalStateException("remainingQuantity not initialized");
+            throw new IllegalStateException("Remaining Quantity is not initialized");
         }
 
         if (fillQty.compareTo(remainingQuantity) > 0) {
