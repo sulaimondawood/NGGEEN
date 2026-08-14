@@ -3,12 +3,14 @@ package com.dawood.nggeen.shared.exception;
 import com.dawood.nggeen.shared.dto.ApiError;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NggeenException.class)
@@ -23,7 +25,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGenericException(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
+        log.error("Unexpected error", ex);
         ApiError error = ApiError.of(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 ErrorCode.INTERNAL_SERVER_ERROR,

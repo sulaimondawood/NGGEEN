@@ -1,5 +1,6 @@
 package com.dawood.nggeen.trade.api.rest;
 
+import com.dawood.nggeen.shared.dto.ApiResponse;
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.application.TradeApplicationService;
 import jakarta.validation.Valid;
@@ -14,12 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/trades")
 @RequiredArgsConstructor
 public class TradeController {
-private final TradeApplicationService tradeService;
+    private final TradeApplicationService tradeService;
 
     @PostMapping
-    public ResponseEntity<String> placeOrder(@RequestBody @Valid PlaceOrderRequest request){
+    public ResponseEntity<ApiResponse<String>> placeOrder(@RequestBody @Valid PlaceOrderRequest request) {
         tradeService.processIncomingOrder(request);
-        return ResponseEntity.ok().body("Your order has been submitted");
+        return ResponseEntity.accepted().body(ApiResponse.successMessage("Your order has been submitted"));
     }
 
 }

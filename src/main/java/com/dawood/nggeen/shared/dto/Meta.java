@@ -1,7 +1,11 @@
 package com.dawood.nggeen.shared.dto;
 
-import lombok.Getter;
 
-@Getter
-public class Meta {
+public record Meta(
+        int page,
+        int size,
+        long totalElements,
+        int totalPages
+) {
+
 }

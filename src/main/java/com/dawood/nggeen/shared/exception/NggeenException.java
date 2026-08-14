@@ -19,4 +19,10 @@ public class NggeenException extends RuntimeException {
         this.status = status;
         this.code = code;
     }
+
+    public NggeenException(ErrorCode code, String message, HttpStatus status,Throwable cause ) {
+        super(message, cause);
+        this.status = status;
+        this.code = code;
+    }
 }
