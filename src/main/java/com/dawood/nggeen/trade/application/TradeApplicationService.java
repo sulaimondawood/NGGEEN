@@ -31,44 +31,33 @@ public class TradeApplicationService {
         }
 
         OrderBook instrumentOrderBook = orderBookRegistry.getByInstrumentSymbol(orderRequest.getSymbol());
-        Order incomingOrder = OrderMapper.toDomainOrder(orderRequest);
-        incomingOrder.setId(UuidCreator.getTimeOrderedEpoch());
+        Order incomingOrder = OrderMapper.toDomainOrder(orderRequest, UuidCreator.getTimeOrderedEpoch());
 
         String symbol = incomingOrder.getSymbol();
         ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);
 
-        instrumentOrderBook.getBids().forEach((val,orders)->{
-            System.out.println(val);
-            orders.forEach(order->{
-                System.out.println(order.getPrice());
-                System.out.println(order.getQuantity());
-                System.out.println(order.getRemainingQuantity());
-                System.out.println(order.isFilled());
-            });
-        });
+        executor.submit(() -> processOrderSafely(instrumentOrderBook, incomingOrder, symbol));
+    }
 
-        executor.submit(() -> {
-            try {
-                long seq = instrumentOrderBook.getSequenceGenerator().next();
+    private void processOrderSafely(OrderBook instrumentOrderBook, Order incomingOrder, String symbol){
+        try {
+            long seq = instrumentOrderBook.getSequenceGenerator().next();
 
-                DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
-                chronicleQueueService.appendEvent(EventType.OrderAccepted, acceptedEvent);
+            DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
+            chronicleQueueService.appendEvent(EventType.OrderAccepted, acceptedEvent);
 
-                instrumentOrderBook.trackDirtyOrders(incomingOrder);
+            instrumentOrderBook.trackDirtyOrders(incomingOrder);
+            instrumentOrderBook.processOrder(incomingOrder);
 
-                instrumentOrderBook.processOrder(incomingOrder);
-
-                List<Order> dirtyOrders = instrumentOrderBook.getAndClearDirtyOrders();
-                if (!dirtyOrders.isEmpty()) {
-                    orderRepository.saveAll(dirtyOrders);
-                }
-
-            } catch (Exception e) {
-                log.error("Failed to process order {} on symbol {}", incomingOrder.getId(), symbol, e);
+            List<Order> dirtyOrders = instrumentOrderBook.getAndClearDirtyOrders();
+            if (!dirtyOrders.isEmpty()) {
+                orderRepository.saveAll(dirtyOrders);
             }
-        });
 
+        } catch (Exception e) {
+            log.error("Failed to process order {} on symbol {}", incomingOrder.getId(), symbol, e);
 
+        }
     }
 
 }
