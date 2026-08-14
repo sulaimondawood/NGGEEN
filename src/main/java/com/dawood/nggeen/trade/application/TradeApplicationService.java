@@ -37,6 +37,7 @@ public class TradeApplicationService {
         ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);
 
         executor.submit(() -> processOrderSafely(instrumentOrderBook, incomingOrder, symbol));
+
     }
 
     private void processOrderSafely(OrderBook instrumentOrderBook, Order incomingOrder, String symbol){
