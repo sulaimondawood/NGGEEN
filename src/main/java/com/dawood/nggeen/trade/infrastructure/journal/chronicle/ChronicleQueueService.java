@@ -34,15 +34,12 @@ public class ChronicleQueueService {
         ExcerptTailer tailer = createTailer().toStart();
         while (true) {
             try (DocumentContext dc = tailer.readingDocument()) {
-                System.out.println(dc.isPresent());
                 if (!dc.isPresent()) {
                     break;
                 }
 
                 String eventType = dc.wire().read("eventType").text();
-                System.out.println(eventType);
                 DomainEvent event = (DomainEvent) dc.wire().read("event").typedMarshallable();
-                System.out.println(event);
 
                 if (event != null) {
                     eventConsumer.accept(eventType, event);
