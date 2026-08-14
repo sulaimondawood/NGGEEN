@@ -36,28 +36,28 @@ public class TradeApplicationService {
         String symbol = incomingOrder.getSymbol();
         ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);
 
-        executor.submit(() -> {
-            try {
-                long seq = instrumentOrderBook.getSequenceGenerator().next();
+        executor.submit(() -> processOrderSafely(instrumentOrderBook, incomingOrder, symbol));
+    }
 
-                DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
-                chronicleQueueService.appendEvent(EventType.OrderAccepted, acceptedEvent);
+    private void processOrderSafely(OrderBook instrumentOrderBook, Order incomingOrder, String symbol){
+        try {
+            long seq = instrumentOrderBook.getSequenceGenerator().next();
 
-                instrumentOrderBook.trackDirtyOrders(incomingOrder);
-                instrumentOrderBook.processOrder(incomingOrder);
+            DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
+            chronicleQueueService.appendEvent(EventType.OrderAccepted, acceptedEvent);
 
-                List<Order> dirtyOrders = instrumentOrderBook.getAndClearDirtyOrders();
-                if (!dirtyOrders.isEmpty()) {
-                    orderRepository.saveAll(dirtyOrders);
-                }
+            instrumentOrderBook.trackDirtyOrders(incomingOrder);
+            instrumentOrderBook.processOrder(incomingOrder);
 
-            } catch (Exception e) {
-                log.error("Failed to process order {} on symbol {}", incomingOrder.getId(), symbol, e);
-
+            List<Order> dirtyOrders = instrumentOrderBook.getAndClearDirtyOrders();
+            if (!dirtyOrders.isEmpty()) {
+                orderRepository.saveAll(dirtyOrders);
             }
-        });
 
+        } catch (Exception e) {
+            log.error("Failed to process order {} on symbol {}", incomingOrder.getId(), symbol, e);
 
+        }
     }
 
 }
