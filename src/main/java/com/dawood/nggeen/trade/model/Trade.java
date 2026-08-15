@@ -23,8 +23,8 @@ public class Trade extends MetaData {
     @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
-    @Column(nullable = false, updatable = false)
-    private long sequenceNo;
+//    @Column(nullable = false, updatable = false)
+//    private long sequenceNo;
 
     @Column(nullable = false, updatable = false)
     private String symbol;

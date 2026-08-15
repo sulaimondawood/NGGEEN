@@ -26,9 +26,6 @@ public class ChronicleQueueService {
         writeEvent(eventType.name(), event);
     }
 
-    private ExcerptTailer createTailer() {
-        return chronicleQueueConfig.chronicleQueue().createTailer();
-    }
 
     public void replay(BiConsumer<String, DomainEvent> eventConsumer) {
         ExcerptTailer tailer = createTailer().toStart();
@@ -49,6 +46,14 @@ public class ChronicleQueueService {
                 break;
             }
         }
+    }
+
+    public ExcerptTailer createNamedTailer(String id){
+        return chronicleQueueConfig.chronicleQueue().createTailer(id);
+    }
+
+    private ExcerptTailer createTailer() {
+        return chronicleQueueConfig.chronicleQueue().createTailer();
     }
 
     private void writeEvent(String eventType, Marshallable event) {

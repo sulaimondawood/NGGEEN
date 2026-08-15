@@ -1,6 +1,7 @@
 package com.dawood.nggeen.trade.mapper;
 
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
+import com.dawood.nggeen.trade.event.OrderAccepted;
 import com.dawood.nggeen.trade.model.Order;
 
 import java.util.UUID;
@@ -16,6 +17,18 @@ public class OrderMapper {
                 .stopPrice(orderRequest.getStopPrice())
                 .quantity(orderRequest.getQuantity())
                 .remainingQuantity(orderRequest.getQuantity())
+                .build();
+    }
+
+    public static Order fromEvent(OrderAccepted event){
+        return Order.builder()
+                .id(event.getOrderId())
+                .symbol(event.symbol())
+                .orderType(event.getOrderType())
+                .orderSide(event.getOrderSide())
+                .price(event.getPrice())
+                .stopPrice(event.getStopPrice())
+                .quantity(event.getQuantity())
                 .build();
     }
 }
