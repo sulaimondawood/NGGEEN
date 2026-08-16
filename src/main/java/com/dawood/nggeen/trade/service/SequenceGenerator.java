@@ -27,4 +27,8 @@ public class SequenceGenerator {
         );
     }
 
+    public void reset(long seq){
+        sequence.set(seq);
+    }
+
 }

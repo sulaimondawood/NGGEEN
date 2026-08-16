@@ -14,6 +14,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -119,6 +120,45 @@ public class OrderBook {
                 .filter(order -> {
                     return order.getStatus() == OrderStatus.NEW || order.getStatus() == OrderStatus.PARTIALLY_FILLED;
                 }).toList();
+    }
+
+    public OrderBookSnapshot captureSnapshot(long lastIdx) {
+        OrderBookSnapshot snap = new OrderBookSnapshot();
+        snap.setSymbol(instrument);
+        snap.setSequenceNo(sequenceGenerator.current());
+        snap.setCreatedAt(Instant.now());
+        snap.setBids(flattenSide(bids));
+        snap.setAsks(flattenSide(asks));
+        snap.setChronicleQueueIndex(lastIdx);
+        return snap;
+    }
+
+    public void hydrateFromSnapshot(OrderBookSnapshot snapshot) {
+        this.bids.clear();
+        this.asks.clear();
+        this.orderMap.clear();
+
+        this.sequenceGenerator.reset(snapshot.getSequenceNo());
+
+        if (snapshot.getBids() != null) {
+            for (Order order : snapshot.getBids()) {
+                addOrderToBook(order);
+            }
+        }
+
+        if (snapshot.getAsks() != null) {
+            for (Order order : snapshot.getAsks()) {
+                addOrderToBook(order);
+            }
+        }
+    }
+
+    private List<Order> flattenSide(TreeMap<BigDecimal, LinkedList<Order>> side) {
+        List<Order> list = new ArrayList<>();
+        for (LinkedList<Order> ordersAtPrice : side.values()) {
+            list.addAll(ordersAtPrice);
+        }
+        return list;
     }
 
     private BigDecimal getBestBid() {

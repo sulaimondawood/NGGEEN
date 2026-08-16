@@ -23,7 +23,7 @@ import java.util.Optional;
 @Slf4j
 public class FileSnapShotStore implements SnapshotStore {
 
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${nggeen.snapshot.path}")
     private Path path;
@@ -87,7 +87,7 @@ public class FileSnapShotStore implements SnapshotStore {
             List<Path> snapshots = pathStream.filter(Files::isRegularFile)
                     .filter(p -> {
                         String name = p.getFileName().toString();
-                        return name.startsWith("snapshot-") && name.endsWith("json");
+                        return name.startsWith("snapshot-") && name.endsWith(".json");
                     })
                     .sorted(Comparator.comparing(p -> p.getFileName().toString()))
                     .toList();

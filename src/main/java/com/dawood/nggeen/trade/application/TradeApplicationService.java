@@ -9,7 +9,9 @@ import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueSe
 import com.dawood.nggeen.trade.mapper.OrderMapper;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
+import com.dawood.nggeen.trade.model.OrderBookSnapshot;
 import com.dawood.nggeen.trade.model.enums.EventType;
+import com.dawood.nggeen.trade.service.FileSnapShotStore;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,9 @@ import java.util.concurrent.ExecutorService;
 public class TradeApplicationService {
     private final OrderBookRegistry orderBookRegistry;
     private final ChronicleQueueService chronicleQueueService;
+    private final FileSnapShotStore fileSnapShotStore;
+    private static final long SNAPSHOT_INTERVAL = 50_000L;
+
 
     public void processIncomingOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) {
@@ -54,9 +59,14 @@ public class TradeApplicationService {
             long seq = instrumentOrderBook.getSequenceGenerator().next();
 
             DomainEvent acceptedEvent = incomingOrder.markAccepted(seq);
-            chronicleQueueService.appendEvent(EventType.OrderAccepted, acceptedEvent);
+            long lastIdx = chronicleQueueService.appendEvent(EventType.OrderAccepted, acceptedEvent);
 
             instrumentOrderBook.processOrder(incomingOrder);
+
+            if (shouldSnapshot(instrumentOrderBook)) {
+                OrderBookSnapshot snapshot = instrumentOrderBook.captureSnapshot(lastIdx);
+                fileSnapShotStore.save(snapshot);
+            }
 
         } catch (Exception e) {
             log.error("Failed to process order {} on symbol {}", incomingOrder.getId(), symbol, e);
@@ -69,4 +79,8 @@ public class TradeApplicationService {
         }
     }
 
+    private boolean shouldSnapshot(OrderBook orderBook) {
+        long current = orderBook.getSequenceGenerator().current();
+        return current > 0 && (current % SNAPSHOT_INTERVAL == 0);
+    }
 }
