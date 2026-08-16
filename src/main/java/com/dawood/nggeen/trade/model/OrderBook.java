@@ -9,7 +9,6 @@ import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.dawood.nggeen.trade.model.enums.OrderType;
 import com.dawood.nggeen.trade.service.SequenceGenerator;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

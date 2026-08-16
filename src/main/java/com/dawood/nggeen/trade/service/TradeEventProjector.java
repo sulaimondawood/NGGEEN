@@ -38,21 +38,22 @@ public class TradeEventProjector {
     public void flush() {
         List<Trade> trades = new ArrayList<>(BATCH_SIZE);
         long startIdx = namedTailer.index();
-        while (trades.size() < BATCH_SIZE) {
+        int reads = 0;
+        while (reads < BATCH_SIZE) {
             try (DocumentContext dc = namedTailer.readingDocument()) {
                 if (!dc.isPresent()) {
                     break;
                 }
-
                 String eventType = dc.wire().read("eventType").text();
                 if (Objects.equals(eventType, EventType.TradeExecuted.name())) {
                     TradeExecuted event = dc.wire().read("event").typedMarshallable();
                     if (event != null) {
                         trades.add(TradeMapper.fromEvent(event));
                     }
-                }else {
+                } else {
                     dc.wire().read("event").typedMarshallable();
                 }
+                reads++;
             }
         }
 
