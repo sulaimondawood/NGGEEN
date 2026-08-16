@@ -45,9 +45,6 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
             restingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
 
-            orderBook.trackDirtyOrders(incomingOrder);
-            orderBook.trackDirtyOrders(restingOrder);
-
             long tradeSeq = orderBook.getSequenceGenerator().next();
             UUID tradeId = UuidCreator.getTimeOrderedEpoch();
             UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : restingOrder.getId();

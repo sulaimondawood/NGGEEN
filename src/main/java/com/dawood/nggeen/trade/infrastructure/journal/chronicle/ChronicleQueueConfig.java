@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Configuration
 public class ChronicleQueueConfig {
@@ -16,15 +17,18 @@ public class ChronicleQueueConfig {
 
     @Bean(destroyMethod = "close")
     public ChronicleQueue chronicleQueue() {
-        File baseDir = new File(journalPath);
-        if (!baseDir.exists()) {
-            baseDir.mkdirs();
-        }
+        try {
+            Path baseDir = Path.of(journalPath);
+            Files.createDirectories(baseDir);
 
-        return SingleChronicleQueueBuilder
-                .single(baseDir)
-                .rollCycle(RollCycles.FAST_DAILY)
-                .build();
+            return SingleChronicleQueueBuilder
+                    .single(baseDir.toFile())
+                    .rollCycle(RollCycles.FAST_DAILY)
+                    .build();
+
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to initialize Chronicle Queue directory at " + journalPath, e);
+        }
     }
 
 }

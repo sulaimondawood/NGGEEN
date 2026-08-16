@@ -51,14 +51,9 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             firstRestingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
 
-            orderBook.trackDirtyOrders(incomingOrder);
-            orderBook.trackDirtyOrders(firstRestingOrder);
-
             OrderSide orderSide = incomingOrder.getOrderSide();
             long tradeSeq = orderBook.getSequenceGenerator().next();
 
-            log.info(String.valueOf(tradeSeq));
-            System.out.println(tradeSeq);
 
             UUID tradeId = UuidCreator.getTimeOrderedEpoch();
             UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : firstRestingOrder.getId();

@@ -16,3 +16,5 @@ spring:
 nggeen:
   journal:
     path: ./data/chronicle/journal
+  snapshot:
+    path: ./data/snapshots

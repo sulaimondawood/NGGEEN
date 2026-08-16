@@ -9,13 +9,14 @@ import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.dawood.nggeen.trade.model.enums.OrderType;
 import com.dawood.nggeen.trade.service.SequenceGenerator;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
@@ -27,10 +28,7 @@ public class OrderBook {
     private String instrument;
     private TreeMap<BigDecimal, LinkedList<Order>> bids = new TreeMap<>(Comparator.reverseOrder());
     private TreeMap<BigDecimal, LinkedList<Order>> asks = new TreeMap<>();
-    private Map<UUID, Order> orderMap = new HashMap<>();
-
-    @Getter(AccessLevel.NONE)
-    private Set<Order> dirtyOrders = new LinkedHashSet<>();
+    private Map<UUID, Order> orderMap = new ConcurrentHashMap<>();
 
     public OrderBook(Map<String, OrderMatchingStrategy> strategy) {
         this.matchingStrategies = strategy;
@@ -99,20 +97,8 @@ public class OrderBook {
         return orderSide == OrderSide.BUY ? bids : asks;
     }
 
-    public void trackDirtyOrders(Order order) {
-        if (order != null) {
-            this.dirtyOrders.add(order);
-        }
-    }
-
-    public List<Order> getAndClearDirtyOrders() {
-        List<Order> dirtyOrdersCopy = new ArrayList<>(dirtyOrders);
-        dirtyOrders.clear();
-        return dirtyOrdersCopy;
-    }
-
     public void rebuildOrderBookFromEventHistory(DomainEvent event) {
-        if(event == null){
+        if (event == null) {
             return;
         }
         sequenceGenerator.updateIfGreater(event.sequenceNo());
@@ -123,9 +109,56 @@ public class OrderBook {
 
             case OrderCancelled cancelled -> replayOrderCancelled(cancelled);
 
-          default -> log.debug("Unhandled event type during replay: {}", event.getClass().getSimpleName());
+            default -> log.debug("Unhandled event type during replay: {}", event.getClass().getSimpleName());
         }
 
+    }
+
+    public List<Order> getActiveOrders() {
+        return orderMap.values()
+                .stream()
+                .filter(order -> {
+                    return order.getStatus() == OrderStatus.NEW || order.getStatus() == OrderStatus.PARTIALLY_FILLED;
+                }).toList();
+    }
+
+    public OrderBookSnapshot captureSnapshot(long lastIdx) {
+        OrderBookSnapshot snap = new OrderBookSnapshot();
+        snap.setSymbol(instrument);
+        snap.setSequenceNo(sequenceGenerator.current());
+        snap.setCreatedAt(Instant.now());
+        snap.setBids(flattenSide(bids));
+        snap.setAsks(flattenSide(asks));
+        snap.setChronicleQueueIndex(lastIdx);
+        return snap;
+    }
+
+    public void hydrateFromSnapshot(OrderBookSnapshot snapshot) {
+        this.bids.clear();
+        this.asks.clear();
+        this.orderMap.clear();
+
+        this.sequenceGenerator.reset(snapshot.getSequenceNo());
+
+        if (snapshot.getBids() != null) {
+            for (Order order : snapshot.getBids()) {
+                addOrderToBook(order);
+            }
+        }
+
+        if (snapshot.getAsks() != null) {
+            for (Order order : snapshot.getAsks()) {
+                addOrderToBook(order);
+            }
+        }
+    }
+
+    private List<Order> flattenSide(TreeMap<BigDecimal, LinkedList<Order>> side) {
+        List<Order> list = new ArrayList<>();
+        for (LinkedList<Order> ordersAtPrice : side.values()) {
+            list.addAll(ordersAtPrice);
+        }
+        return list;
     }
 
     private BigDecimal getBestBid() {
