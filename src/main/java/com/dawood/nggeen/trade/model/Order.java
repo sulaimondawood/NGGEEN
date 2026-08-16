@@ -131,6 +131,7 @@ public class Order extends MetaData {
                 .stopPrice(event.getStopPrice())
                 .quantity(event.getQuantity())
                 .remainingQuantity(event.getQuantity())
+                .status(OrderStatus.NEW)
                 .build();
     }
 

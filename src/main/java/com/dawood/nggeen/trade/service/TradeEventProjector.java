@@ -22,7 +22,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Slf4j
 public class TradeEventProjector {
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 500;
 
     private final TradeRepository tradeRepository;
     private final ChronicleQueueService queueService;
@@ -34,7 +34,7 @@ public class TradeEventProjector {
         namedTailer = queueService.createNamedTailer("trade-projector");
     }
 
-    @Scheduled(fixedDelay = 100)
+    @Scheduled(fixedDelay = 200)
     public void flush() {
         List<Trade> trades = new ArrayList<>(BATCH_SIZE);
         long startIdx = namedTailer.index();

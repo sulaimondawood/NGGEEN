@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
@@ -27,10 +28,7 @@ public class OrderBook {
     private String instrument;
     private TreeMap<BigDecimal, LinkedList<Order>> bids = new TreeMap<>(Comparator.reverseOrder());
     private TreeMap<BigDecimal, LinkedList<Order>> asks = new TreeMap<>();
-    private Map<UUID, Order> orderMap = new HashMap<>();
-
-    @Getter(AccessLevel.NONE)
-    private Set<Order> dirtyOrders = new LinkedHashSet<>();
+    private Map<UUID, Order> orderMap = new ConcurrentHashMap<>();
 
     public OrderBook(Map<String, OrderMatchingStrategy> strategy) {
         this.matchingStrategies = strategy;
@@ -99,20 +97,8 @@ public class OrderBook {
         return orderSide == OrderSide.BUY ? bids : asks;
     }
 
-    public void trackDirtyOrders(Order order) {
-        if (order != null) {
-            this.dirtyOrders.add(order);
-        }
-    }
-
-    public List<Order> getAndClearDirtyOrders() {
-        List<Order> dirtyOrdersCopy = new ArrayList<>(dirtyOrders);
-        dirtyOrders.clear();
-        return dirtyOrdersCopy;
-    }
-
     public void rebuildOrderBookFromEventHistory(DomainEvent event) {
-        if(event == null){
+        if (event == null) {
             return;
         }
         sequenceGenerator.updateIfGreater(event.sequenceNo());
@@ -123,9 +109,17 @@ public class OrderBook {
 
             case OrderCancelled cancelled -> replayOrderCancelled(cancelled);
 
-          default -> log.debug("Unhandled event type during replay: {}", event.getClass().getSimpleName());
+            default -> log.debug("Unhandled event type during replay: {}", event.getClass().getSimpleName());
         }
 
+    }
+
+    public List<Order> getActiveOrders() {
+        return orderMap.values()
+                .stream()
+                .filter(order -> {
+                    return order.getStatus() == OrderStatus.NEW || order.getStatus() == OrderStatus.PARTIALLY_FILLED;
+                }).toList();
     }
 
     private BigDecimal getBestBid() {

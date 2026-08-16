@@ -51,9 +51,6 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             firstRestingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
 
-            orderBook.trackDirtyOrders(incomingOrder);
-            orderBook.trackDirtyOrders(firstRestingOrder);
-
             OrderSide orderSide = incomingOrder.getOrderSide();
             long tradeSeq = orderBook.getSequenceGenerator().next();
 

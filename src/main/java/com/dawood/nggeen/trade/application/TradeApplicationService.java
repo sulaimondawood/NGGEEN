@@ -2,6 +2,7 @@ package com.dawood.nggeen.trade.application;
 
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.NggeenException;
+import com.dawood.nggeen.trade.api.rest.dto.OrderResponse;
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.event.DomainEvent;
 import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
@@ -16,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 @Service
@@ -40,7 +43,14 @@ public class TradeApplicationService {
 
     }
 
-    private void processOrderSafely(OrderBook instrumentOrderBook, Order incomingOrder, String symbol){
+    public List<OrderResponse> getActiveOrders() {
+        return orderBookRegistry.getAllOrderBooks().values().stream()
+                .flatMap(orderBook -> orderBook.getActiveOrders().stream())
+                .map(OrderMapper::toDTO)
+                .toList();
+    }
+
+    private void processOrderSafely(OrderBook instrumentOrderBook, Order incomingOrder, String symbol) {
         try {
             long seq = instrumentOrderBook.getSequenceGenerator().next();
 

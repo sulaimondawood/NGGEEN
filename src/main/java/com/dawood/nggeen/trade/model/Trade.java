@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table
+@Table(name = "trades")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -22,9 +22,6 @@ public class Trade extends MetaData {
     @Id
     @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
-
-//    @Column(nullable = false, updatable = false)
-//    private long sequenceNo;
 
     @Column(nullable = false, updatable = false)
     private String symbol;

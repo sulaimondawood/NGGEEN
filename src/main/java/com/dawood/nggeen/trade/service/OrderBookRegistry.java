@@ -4,6 +4,7 @@ import com.dawood.nggeen.trade.model.OrderBook;
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -66,6 +67,10 @@ public class OrderBookRegistry {
                 Thread.currentThread().interrupt();
             }
         });
+    }
+
+    public Map<String, OrderBook> getAllOrderBooks() {
+        return this.orderBooks;
     }
 
     private ThreadFactory threadFactory(String symbol) {
