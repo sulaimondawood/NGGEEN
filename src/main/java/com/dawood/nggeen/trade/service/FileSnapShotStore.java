@@ -2,7 +2,6 @@ package com.dawood.nggeen.trade.service;
 
 import com.dawood.nggeen.trade.model.OrderBookSnapshot;
 import com.dawood.nggeen.trade.service.contracts.SnapshotStore;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,14 +18,18 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class FileSnapShotStore implements SnapshotStore {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    @Value("${nggeen.snapshot.path}")
-    private Path path;
+    private final Path path;
+
+    public FileSnapShotStore(ObjectMapper objectMapper,
+                             @Value("${nggeen.snapshot.path}") Path path) {
+        this.objectMapper = objectMapper;
+        this.path = path;
+    }
 
     @Override
     public synchronized void save(OrderBookSnapshot snapshot) {
