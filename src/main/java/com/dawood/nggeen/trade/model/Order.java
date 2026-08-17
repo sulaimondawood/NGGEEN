@@ -8,6 +8,7 @@ import com.dawood.nggeen.trade.model.enums.CancelReason;
 import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.dawood.nggeen.trade.model.enums.OrderType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -56,6 +57,7 @@ public class Order extends MetaData {
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING_NEW;
 
+    @JsonIgnore
     public boolean isFilled() {
         return quantity.compareTo(filledQuantity) <= 0;
     }
