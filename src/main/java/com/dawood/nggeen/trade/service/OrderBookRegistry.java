@@ -1,10 +1,13 @@
 package com.dawood.nggeen.trade.service;
 
+import com.dawood.nggeen.shared.dto.ErrorCode;
+import com.dawood.nggeen.trade.exception.InstrumentNotFound;
+import com.dawood.nggeen.trade.exception.InvalidSymbolException;
 import com.dawood.nggeen.trade.model.OrderBook;
 import jakarta.annotation.PreDestroy;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -34,12 +37,12 @@ public class OrderBookRegistry {
 
     public OrderBook getByInstrumentSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) {
-            throw new IllegalArgumentException("Invalid symbol");
+            throw new InvalidSymbolException(ErrorCode.INVALID_SYMBOL,"Invalid symbol", HttpStatus.BAD_REQUEST);
         }
 
         OrderBook orderBook = orderBooks.get(symbol);
         if (orderBook == null) {
-            throw new IllegalArgumentException("Instrument not available: " + symbol);
+            throw new InstrumentNotFound(ErrorCode.NOT_FOUND,"Instrument not available: " + symbol,HttpStatus.NOT_FOUND);
         }
 
         return orderBook;
@@ -48,7 +51,7 @@ public class OrderBookRegistry {
     public ExecutorService getExecutorFor(String symbol) {
         ExecutorService executor = executors.get(symbol);
         if (executor == null) {
-            throw new IllegalArgumentException("No thread executor configured for instrument: " + symbol);
+            throw new InstrumentNotFound(ErrorCode.NOT_FOUND,"No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
         }
         return executor;
     }
