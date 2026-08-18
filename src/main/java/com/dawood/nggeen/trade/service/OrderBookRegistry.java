@@ -21,6 +21,7 @@ public class OrderBookRegistry {
         if (orderBook == null || orderBook.getInstrument() == null) {
             throw new IllegalArgumentException("Invalid OrderBook or instrument symbol");
         }
+
         String symbol = orderBook.getInstrument();
         orderBooks.put(symbol, orderBook);
 
@@ -37,12 +38,12 @@ public class OrderBookRegistry {
 
     public OrderBook getByInstrumentSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) {
-            throw new InvalidSymbolException(ErrorCode.INVALID_SYMBOL,"Invalid symbol", HttpStatus.BAD_REQUEST);
+            throw new InvalidSymbolException(ErrorCode.INVALID_SYMBOL, "Invalid symbol", HttpStatus.BAD_REQUEST);
         }
 
         OrderBook orderBook = orderBooks.get(symbol);
         if (orderBook == null) {
-            throw new InstrumentNotFound(ErrorCode.NOT_FOUND,"Instrument not available: " + symbol,HttpStatus.NOT_FOUND);
+            throw new InstrumentNotFound(ErrorCode.NOT_FOUND, "Instrument not available: " + symbol, HttpStatus.NOT_FOUND);
         }
 
         return orderBook;
@@ -51,7 +52,7 @@ public class OrderBookRegistry {
     public ExecutorService getExecutorFor(String symbol) {
         ExecutorService executor = executors.get(symbol);
         if (executor == null) {
-            throw new InstrumentNotFound(ErrorCode.NOT_FOUND,"No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
+            throw new InstrumentNotFound(ErrorCode.NOT_FOUND, "No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
         }
         return executor;
     }
@@ -65,6 +66,7 @@ public class OrderBookRegistry {
                 if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
                     executor.shutdownNow();
                 }
+
             } catch (InterruptedException e) {
                 executor.shutdownNow();
                 Thread.currentThread().interrupt();
