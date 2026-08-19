@@ -7,9 +7,11 @@ import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.enums.InstrumentStatus;
 import com.dawood.nggeen.trade.model.enums.OrderType;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
+@Component
 public class InstrumentValidator {
     public void validate(Order incomingOrder, Instrument instrument) {
         if (!instrument.getStatus().equals(InstrumentStatus.TRADING)) {

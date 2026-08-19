@@ -8,11 +8,13 @@ import com.dawood.nggeen.trade.event.DomainEvent;
 import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.mapper.OrderMapper;
+import com.dawood.nggeen.trade.model.Instrument;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 import com.dawood.nggeen.trade.model.OrderBookSnapshot;
 import com.dawood.nggeen.trade.model.enums.EventType;
 import com.dawood.nggeen.trade.service.FileSnapShotStore;
+import com.dawood.nggeen.trade.service.InstrumentValidator;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
@@ -30,16 +32,25 @@ public class TradeApplicationService {
     private final OrderBookRegistry orderBookRegistry;
     private final ChronicleQueueService chronicleQueueService;
     private final FileSnapShotStore fileSnapShotStore;
+    private final InstrumentValidator instrumentValidator;
+
     private static final long SNAPSHOT_INTERVAL = 50_000L;
 
 
     public void processIncomingOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) {
-            throw new InvalidOrderException(ErrorCode.BAD_REQUEST, "Order request must not be null", HttpStatus.BAD_REQUEST);
+            throw new InvalidOrderException(
+                    ErrorCode.INVALID_REQUEST,
+                    "Order request must not be null",
+                    HttpStatus.BAD_REQUEST);
         }
 
         OrderBook instrumentOrderBook = orderBookRegistry.getByInstrumentSymbol(orderRequest.getSymbol());
+        Instrument instrument = orderBookRegistry.getInstrumentBySymbol(orderRequest.getSymbol());
+
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest, UuidCreator.getTimeOrderedEpoch());
+
+        instrumentValidator.validate(incomingOrder,instrument);
 
         String symbol = incomingOrder.getSymbol();
         ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);

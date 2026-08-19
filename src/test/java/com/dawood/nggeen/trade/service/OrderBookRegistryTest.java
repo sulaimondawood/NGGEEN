@@ -1,5 +1,6 @@
 package com.dawood.nggeen.trade.service;
 
+import com.dawood.nggeen.trade.model.Instrument;
 import com.dawood.nggeen.trade.model.OrderBook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,9 @@ class OrderBookRegistryTest {
         OrderBook orderBook = new OrderBook(Map.of());
         orderBook.setInstrument(symbol);
 
-        registry.registerOrderBook(orderBook);
+        Instrument instrument = new Instrument();
+
+        registry.registerOrderBook(orderBook, instrument);
 
         assertEquals(orderBook, registry.getByInstrumentSymbol(symbol));
         assertNotNull(registry.getExecutorFor(symbol));
@@ -33,10 +36,10 @@ class OrderBookRegistryTest {
 
     @Test
     void shouldThrowException_WhenRegisteringInvalidOrderBook(){
-       IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,()->registry.registerOrderBook(null));
+       IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,()->registry.registerOrderBook(null, null));
 
        OrderBook orderBook = new OrderBook(Map.of());
-       IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class,()->registry.registerOrderBook(orderBook));
+       IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class,()->registry.registerOrderBook(orderBook, null));
 
        assertEquals("Invalid OrderBook or instrument symbol", exception.getMessage());
        assertEquals("Invalid OrderBook or instrument symbol", exception2.getMessage());
@@ -46,7 +49,9 @@ class OrderBookRegistryTest {
     void shouldGetInstrumentOrderBook_WhenSymbolValueIsValid(){
         OrderBook orderBook = new OrderBook(Map.of());
         orderBook.setInstrument(symbol);
-        registry.registerOrderBook(orderBook);
+        Instrument instrument = new Instrument();
+
+        registry.registerOrderBook(orderBook, instrument);
 
         registry.getByInstrumentSymbol(symbol);
 
@@ -62,8 +67,10 @@ class OrderBookRegistryTest {
         OrderBook orderBook2 = new OrderBook(Map.of());
         orderBook2.setInstrument("ETHUSDT");
 
-        registry.registerOrderBook(orderBook);
-        registry.registerOrderBook(orderBook2);
+
+
+        registry.registerOrderBook(orderBook, new Instrument());
+        registry.registerOrderBook(orderBook2, new Instrument());
 
         ExecutorService btcExecutor = registry.getExecutorFor(symbol);
         ExecutorService ethExecutor = registry.getExecutorFor("ETHUSDT");
