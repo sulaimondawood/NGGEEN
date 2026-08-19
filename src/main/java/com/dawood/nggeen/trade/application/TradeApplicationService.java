@@ -5,7 +5,7 @@ import com.dawood.nggeen.shared.exception.NggeenException;
 import com.dawood.nggeen.trade.api.rest.dto.OrderResponse;
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.event.DomainEvent;
-import com.dawood.nggeen.trade.exception.InvalidOrderRequestException;
+import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.mapper.OrderMapper;
 import com.dawood.nggeen.trade.model.Order;
@@ -35,7 +35,7 @@ public class TradeApplicationService {
 
     public void processIncomingOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) {
-            throw new InvalidOrderRequestException(ErrorCode.BAD_REQUEST, "Order request must not be null", HttpStatus.BAD_REQUEST);
+            throw new InvalidOrderException(ErrorCode.BAD_REQUEST, "Order request must not be null", HttpStatus.BAD_REQUEST);
         }
 
         OrderBook instrumentOrderBook = orderBookRegistry.getByInstrumentSymbol(orderRequest.getSymbol());

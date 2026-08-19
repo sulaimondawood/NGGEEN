@@ -1,8 +1,8 @@
 package com.dawood.nggeen.trade.service;
 
 import com.dawood.nggeen.shared.dto.ErrorCode;
-import com.dawood.nggeen.trade.exception.InstrumentNotFound;
-import com.dawood.nggeen.trade.exception.InvalidSymbolException;
+import com.dawood.nggeen.shared.exception.ResourceNotFound;
+import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.trade.model.OrderBook;
 import jakarta.annotation.PreDestroy;
 import org.springframework.http.HttpStatus;
@@ -15,7 +15,6 @@ import java.util.concurrent.*;
 public class OrderBookRegistry {
     private final Map<String, OrderBook> orderBooks = new ConcurrentHashMap<>();
     private final Map<String, ExecutorService> executors = new ConcurrentHashMap<>();
-
 
     public void registerOrderBook(OrderBook orderBook) {
         if (orderBook == null || orderBook.getInstrument() == null) {
@@ -38,12 +37,12 @@ public class OrderBookRegistry {
 
     public OrderBook getByInstrumentSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) {
-            throw new InvalidSymbolException(ErrorCode.INVALID_SYMBOL, "Invalid symbol", HttpStatus.BAD_REQUEST);
+            throw new InvalidOrderException(ErrorCode.INVALID_SYMBOL, "Invalid symbol", HttpStatus.BAD_REQUEST);
         }
 
         OrderBook orderBook = orderBooks.get(symbol);
         if (orderBook == null) {
-            throw new InstrumentNotFound(ErrorCode.NOT_FOUND, "Instrument not available: " + symbol, HttpStatus.NOT_FOUND);
+            throw new ResourceNotFound(ErrorCode.NOT_FOUND, "Instrument not available: " + symbol, HttpStatus.NOT_FOUND);
         }
 
         return orderBook;
@@ -52,7 +51,7 @@ public class OrderBookRegistry {
     public ExecutorService getExecutorFor(String symbol) {
         ExecutorService executor = executors.get(symbol);
         if (executor == null) {
-            throw new InstrumentNotFound(ErrorCode.NOT_FOUND, "No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
+            throw new ResourceNotFound(ErrorCode.NOT_FOUND, "No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
         }
         return executor;
     }
