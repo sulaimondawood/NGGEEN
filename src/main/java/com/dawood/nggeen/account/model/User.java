@@ -4,6 +4,7 @@ import com.dawood.nggeen.account.model.enums.UserStatus;
 import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 public class User extends MetaData {
 
     @Id
@@ -21,6 +23,9 @@ public class User extends MetaData {
 
     @Column(nullable = false, unique = true)
     private String email;
+
+    @Column(nullable = false)
+    private String fullname;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -37,6 +42,10 @@ public class User extends MetaData {
         this.username = username;
         this.passwordHash = password;
         this.status = status;
+    }
+
+    public static User create(String email, String username, String password, UserStatus status){
+        return new User(email, username, password, status);
     }
 
     public boolean canTrade() {

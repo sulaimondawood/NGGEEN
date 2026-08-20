@@ -2,14 +2,12 @@ package com.dawood.nggeen.account.infrastructure.message.mail;
 
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.InfrastructureException;
-import com.dawood.nggeen.shared.exception.NggeenException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;

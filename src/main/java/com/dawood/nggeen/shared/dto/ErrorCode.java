@@ -1,6 +1,7 @@
 package com.dawood.nggeen.shared.dto;
 
 public enum ErrorCode {
+    EMAIL_EXISTS("EMAIL_EXISTS"),
 
     MARKET_NOT_TRADING("MARKET_NOT_TRADING"),
     ORDER_EXECUTION_FAILED("ORDER_EXECUTION_FAILED"),

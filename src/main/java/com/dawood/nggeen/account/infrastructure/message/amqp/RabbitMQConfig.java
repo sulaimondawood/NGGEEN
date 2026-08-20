@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    private final String EXCHANGE = "nggeen.exchange";
+    public static final String NGGEEN_EXCHANGE = "nggeen.exchange";
 
     public static final String DLX_EXCHANGE = "nggeen.dlx";
     public static final String DEAD_LETTER_QUEUE = "nggeen.dead-letter.queue";
@@ -16,7 +16,7 @@ public class RabbitMQConfig {
 
     @Bean
     public TopicExchange topicExchange() {
-        return new TopicExchange(EXCHANGE);
+        return new TopicExchange(NGGEEN_EXCHANGE);
     }
 
     @Bean
