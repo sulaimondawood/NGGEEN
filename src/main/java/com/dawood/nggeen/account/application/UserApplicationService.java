@@ -1,5 +1,6 @@
 package com.dawood.nggeen.account.application;
 
+import com.dawood.nggeen.account.api.rest.dto.CreateUserRequest;
 import com.dawood.nggeen.account.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

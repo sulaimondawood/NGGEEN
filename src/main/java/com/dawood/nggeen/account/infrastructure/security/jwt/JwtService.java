@@ -1,4 +1,4 @@
-package com.dawood.nggeen.account.infrastructure.security.service;
+package com.dawood.nggeen.account.infrastructure.security.jwt;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;

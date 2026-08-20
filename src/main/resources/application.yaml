@@ -22,3 +22,5 @@ nggeen:
     path: ./data/snapshots
   security:
     secret-key: ${SECRET_KEY}
+  message:
+    mail-sub: ${EMAIL_SUB}
