@@ -1,13 +1,13 @@
 package com.dawood.nggeen.account.model;
 
+import com.dawood.nggeen.account.exception.InsufficientBalanceException;
+import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
@@ -18,6 +18,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Getter
+@Setter
 public class AccountBalance extends MetaData {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
@@ -40,5 +42,12 @@ public class AccountBalance extends MetaData {
         this.asset = asset;
         this.available = available;
         this.reserved = reserved;
+    }
+
+    public void reserve(BigDecimal amount){
+        if(amount == null || amount.compareTo(BigDecimal.ZERO) <= 0){
+            throw new IllegalArgumentException("Invalid amount. Reserve amount must be strictly positive");
+        }
+
     }
 }

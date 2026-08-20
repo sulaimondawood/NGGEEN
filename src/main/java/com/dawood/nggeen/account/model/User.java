@@ -32,10 +32,14 @@ public class User extends MetaData {
     @Enumerated(value = EnumType.STRING)
     private UserStatus status;
 
-    public User (String email, String username, String password, UserStatus status){
+    public User(String email, String username, String password, UserStatus status) {
         this.email = email;
         this.username = username;
         this.passwordHash = password;
         this.status = status;
-    };
+    }
+
+    public boolean canTrade() {
+        return this.status == UserStatus.ACTIVE;
+    }
 }
