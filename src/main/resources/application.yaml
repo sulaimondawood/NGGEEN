@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: nggeen
+  config:
+    import: file:.env[.properties]
   datasource:
     username: postgres
     password: admin
@@ -18,3 +20,5 @@ nggeen:
     path: ./data/chronicle/journal
   snapshot:
     path: ./data/snapshots
+  security:
+    secret-key: ${SECRET_KEY}

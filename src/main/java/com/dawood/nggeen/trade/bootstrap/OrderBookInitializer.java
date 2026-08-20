@@ -83,7 +83,6 @@ public class OrderBookInitializer implements CommandLineRunner {
             }
             marketContextMap.put(symbol, new MarketContext(orderBook, instrument));
         }
-
         return marketContextMap;
     }
 
