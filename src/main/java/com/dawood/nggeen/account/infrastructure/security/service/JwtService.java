@@ -59,15 +59,15 @@ public class JwtService {
         }
     }
 
-    public void verifyAndDecodeToken(String token) {
+    public DecodedJWT verifyAndDecodeToken(String token) {
         try {
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer(ISSUER)
                     .build();
 
-            DecodedJWT decodedJWT = verifier.verify(token);
+            return verifier.verify(token);
+
         } catch (JWTVerificationException e) {
-            log.error("Failed to verify JWT token: {}", token);
             log.warn("Invalid or expired JWT token: {}", e.getMessage());
             throw new AuthenticationException(
                     ErrorCode.UNAUTHORIZED,
