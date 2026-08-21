@@ -14,6 +14,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  mail:
+    host: ${SMTP_HOST}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    port: 2525
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 nggeen:
   journal:

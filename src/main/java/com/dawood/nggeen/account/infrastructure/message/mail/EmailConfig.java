@@ -22,7 +22,8 @@ public class EmailConfig {
     private final JavaMailSender mailSender;
 
     @Value("${nggeen.message.mail-sub}")
-    private final String from;
+    private String from;
+
 
     private static final String SENDER_NAME = "Nggeen";
 

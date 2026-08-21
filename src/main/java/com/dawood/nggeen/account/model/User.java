@@ -11,7 +11,11 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users",
+        indexes = {
+                @Index(name = "idx_user_email", columnList = "email")
+        }
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -27,9 +31,6 @@ public class User extends MetaData {
     @Column(nullable = false)
     private String fullname;
 
-    @Column(nullable = false, unique = true)
-    private String username;
-
     @Column(nullable = false)
     private String passwordHash;
 
@@ -37,14 +38,14 @@ public class User extends MetaData {
     @Enumerated(value = EnumType.STRING)
     private UserStatus status;
 
-    public User(String email, String username, String password, UserStatus status) {
+    public User(String email, String fullname, String password, UserStatus status) {
         this.email = email;
-        this.username = username;
+        this.fullname = fullname;
         this.passwordHash = password;
         this.status = status;
     }
 
-    public static User create(String email, String username, String password, UserStatus status){
+    public static User create(String email, String username, String password, UserStatus status) {
         return new User(email, username, password, status);
     }
 

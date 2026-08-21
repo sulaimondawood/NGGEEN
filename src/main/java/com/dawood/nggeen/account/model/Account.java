@@ -6,6 +6,7 @@ import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -15,13 +16,14 @@ import java.util.UUID;
 @Table(name = "user_accounts")
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 @Builder
 public class Account extends MetaData {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User user;
 
     @Enumerated(value = EnumType.STRING)

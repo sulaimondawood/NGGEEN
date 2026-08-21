@@ -1,7 +1,5 @@
 package com.dawood.nggeen.account.model;
 
-import com.dawood.nggeen.account.exception.InsufficientBalanceException;
-import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,15 +35,15 @@ public class AccountBalance extends MetaData {
     @Column(nullable = false)
     private BigDecimal reserved = BigDecimal.ZERO;
 
-    public AccountBalance(UUID accountId, String asset, BigDecimal available, BigDecimal reserved){
-        this.accountId= accountId;
+    public AccountBalance(UUID accountId, String asset, BigDecimal available, BigDecimal reserved) {
+        this.accountId = accountId;
         this.asset = asset;
         this.available = available;
         this.reserved = reserved;
     }
 
-    public void reserve(BigDecimal amount){
-        if(amount == null || amount.compareTo(BigDecimal.ZERO) <= 0){
+    public void reserve(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Invalid amount. Reserve amount must be strictly positive");
         }
 

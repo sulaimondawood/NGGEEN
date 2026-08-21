@@ -1,11 +1,11 @@
 package com.dawood.nggeen.trade.application;
 
 import com.dawood.nggeen.shared.dto.ErrorCode;
+import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.shared.exception.NggeenException;
 import com.dawood.nggeen.trade.api.rest.dto.OrderResponse;
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.event.DomainEvent;
-import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.mapper.OrderMapper;
 import com.dawood.nggeen.trade.model.Instrument;
@@ -36,7 +36,6 @@ public class TradeApplicationService {
 
     private static final long SNAPSHOT_INTERVAL = 50_000L;
 
-
     public void processIncomingOrder(PlaceOrderRequest orderRequest) {
         if (orderRequest == null) {
             throw new InvalidOrderException(
@@ -50,13 +49,12 @@ public class TradeApplicationService {
 
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest, UuidCreator.getTimeOrderedEpoch());
 
-        instrumentValidator.validate(incomingOrder,instrument);
+        instrumentValidator.validate(incomingOrder, instrument);
 
         String symbol = incomingOrder.getSymbol();
         ExecutorService executor = orderBookRegistry.getExecutorFor(symbol);
 
         executor.submit(() -> processOrderSafely(instrumentOrderBook, incomingOrder, symbol));
-
     }
 
     public List<OrderResponse> getActiveOrders() {
