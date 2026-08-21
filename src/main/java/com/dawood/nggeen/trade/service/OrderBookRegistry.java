@@ -1,8 +1,9 @@
 package com.dawood.nggeen.trade.service;
 
 import com.dawood.nggeen.shared.dto.ErrorCode;
-import com.dawood.nggeen.trade.exception.InstrumentNotFound;
-import com.dawood.nggeen.trade.exception.InvalidSymbolException;
+import com.dawood.nggeen.shared.exception.InvalidOrderException;
+import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
+import com.dawood.nggeen.trade.model.Instrument;
 import com.dawood.nggeen.trade.model.OrderBook;
 import jakarta.annotation.PreDestroy;
 import org.springframework.http.HttpStatus;
@@ -15,14 +16,17 @@ import java.util.concurrent.*;
 public class OrderBookRegistry {
     private final Map<String, OrderBook> orderBooks = new ConcurrentHashMap<>();
     private final Map<String, ExecutorService> executors = new ConcurrentHashMap<>();
+    private final Map<String, Instrument> instruments = new ConcurrentHashMap<>();
 
-
-    public void registerOrderBook(OrderBook orderBook) {
+    public void registerOrderBook(OrderBook orderBook, Instrument instrument) {
         if (orderBook == null || orderBook.getInstrument() == null) {
             throw new IllegalArgumentException("Invalid OrderBook or instrument symbol");
         }
+
         String symbol = orderBook.getInstrument();
         orderBooks.put(symbol, orderBook);
+
+        instruments.put(symbol, instrument);
 
         ExecutorService executorService = new ThreadPoolExecutor(
                 1, 1,
@@ -37,12 +41,12 @@ public class OrderBookRegistry {
 
     public OrderBook getByInstrumentSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) {
-            throw new InvalidSymbolException(ErrorCode.INVALID_SYMBOL,"Invalid symbol", HttpStatus.BAD_REQUEST);
+            throw new InvalidOrderException(ErrorCode.INVALID_SYMBOL, "Invalid trading instrument", HttpStatus.BAD_REQUEST);
         }
 
         OrderBook orderBook = orderBooks.get(symbol);
         if (orderBook == null) {
-            throw new InstrumentNotFound(ErrorCode.NOT_FOUND,"Instrument not available: " + symbol,HttpStatus.NOT_FOUND);
+            throw new ResourceNotFoundException(ErrorCode.NOT_FOUND, "Instrument not available: " + symbol, HttpStatus.NOT_FOUND);
         }
 
         return orderBook;
@@ -51,9 +55,27 @@ public class OrderBookRegistry {
     public ExecutorService getExecutorFor(String symbol) {
         ExecutorService executor = executors.get(symbol);
         if (executor == null) {
-            throw new InstrumentNotFound(ErrorCode.NOT_FOUND,"No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
+            throw new ResourceNotFoundException(ErrorCode.NOT_FOUND, "No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
         }
         return executor;
+    }
+
+    public Instrument getInstrumentBySymbol(String symbol) {
+        if (symbol == null || symbol.isBlank()) {
+            throw new InvalidOrderException(
+                    ErrorCode.INVALID_SYMBOL,
+                    "Invalid trading instrument",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        Instrument instrument = instruments.get(symbol);
+        if (instrument == null) {
+            throw new ResourceNotFoundException(
+                    ErrorCode.INSTRUMENT_NOT_FOUND,
+                    "Instrument not found: " + symbol,
+                    HttpStatus.NOT_FOUND);
+        }
+        return instrument;
     }
 
     @PreDestroy
@@ -65,6 +87,7 @@ public class OrderBookRegistry {
                 if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
                     executor.shutdownNow();
                 }
+
             } catch (InterruptedException e) {
                 executor.shutdownNow();
                 Thread.currentThread().interrupt();

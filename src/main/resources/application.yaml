@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: nggeen
+  config:
+    import: file:.env[.properties]
   datasource:
     username: postgres
     password: admin
@@ -12,9 +14,25 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  mail:
+    host: ${SMTP_HOST}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    port: 2525
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 nggeen:
   journal:
     path: ./data/chronicle/journal
   snapshot:
     path: ./data/snapshots
+  security:
+    secret-key: ${SECRET_KEY}
+  message:
+    mail-sub: ${EMAIL_SUB}

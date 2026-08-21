@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NggeenException.class)
     public ResponseEntity<ApiError> handleBusinessException(NggeenException ex, HttpServletRequest req) {
         ApiError error = ApiError.of(
-                ex.getStatus(),
+                ex.getStatus().value(),
                 ex.getCode(),
                 ex.getMessage(),
                 req.getRequestURI()
@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
         log.error("Unexpected error", ex);
         ApiError error = ApiError.of(
-                HttpStatus.INTERNAL_SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 ErrorCode.INTERNAL_SERVER_ERROR,
                 "Something went wrong",
                 request.getRequestURI()

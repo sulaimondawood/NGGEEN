@@ -57,27 +57,6 @@ public class ChronicleQueueService {
         }
     }
 
-    public void replay(BiConsumer<String, DomainEvent> eventConsumer) {
-        ExcerptTailer tailer = createTailer().toStart();
-        while (true) {
-            try (DocumentContext dc = tailer.readingDocument()) {
-                if (!dc.isPresent()) {
-                    break;
-                }
-
-                String eventType = dc.wire().read("eventType").text();
-                DomainEvent event = (DomainEvent) dc.wire().read("event").typedMarshallable();
-
-                if (event != null) {
-                    eventConsumer.accept(eventType, event);
-                }
-            } catch (Exception e) {
-                log.error("Error reading event from Chronicle Queue at index: {}", tailer.index(), e);
-                break;
-            }
-        }
-    }
-
     public ExcerptTailer createNamedTailer(String id) {
         return chronicleQueue.createTailer(id);
     }
@@ -100,6 +79,27 @@ public class ChronicleQueueService {
 
     private ExcerptAppender excerptAppender() {
         return chronicleQueue.createAppender();
+    }
+
+    public void replay(BiConsumer<String, DomainEvent> eventConsumer) {
+        ExcerptTailer tailer = createTailer().toStart();
+        while (true) {
+            try (DocumentContext dc = tailer.readingDocument()) {
+                if (!dc.isPresent()) {
+                    break;
+                }
+
+                String eventType = dc.wire().read("eventType").text();
+                DomainEvent event = (DomainEvent) dc.wire().read("event").typedMarshallable();
+
+                if (event != null) {
+                    eventConsumer.accept(eventType, event);
+                }
+            } catch (Exception e) {
+                log.error("Error reading event from Chronicle Queue at index: {}", tailer.index(), e);
+                break;
+            }
+        }
     }
 
 }

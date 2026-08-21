@@ -28,6 +28,9 @@ public class Order extends MetaData {
     @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
+    @Column( updatable = false)
+    private UUID userId;
+
     @Column(nullable = false)
     private String symbol;
 
@@ -91,6 +94,13 @@ public class Order extends MetaData {
             return incomingPrice.compareTo(restingPrice) >= 0;
         }
         return incomingPrice.compareTo(restingPrice) <= 0;
+    }
+
+    public boolean isSelfTrade(Order restingOrder){
+        if (restingOrder == null || this.userId == null || restingOrder.getUserId() == null) {
+            return false;
+        }
+        return this.userId.equals(restingOrder.getUserId());
     }
 
     public DomainEvent markAccepted(long seq) {
