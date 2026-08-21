@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Table(name = "email_verification_tokens")
 @Builder
 @AllArgsConstructor
+@Getter
 public class EmailVerificationToken {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)

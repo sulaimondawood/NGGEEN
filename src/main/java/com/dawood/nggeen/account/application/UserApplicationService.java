@@ -3,6 +3,7 @@ package com.dawood.nggeen.account.application;
 import com.dawood.nggeen.account.api.rest.dto.CreateUserRequest;
 import com.dawood.nggeen.account.infrastructure.message.amqp.RabbitMQConfig;
 import com.dawood.nggeen.account.infrastructure.persistence.UserRepository;
+import com.dawood.nggeen.account.infrastructure.persistence.VerificationTokenRepository;
 import com.dawood.nggeen.account.model.EmailVerificationToken;
 import com.dawood.nggeen.account.model.User;
 import com.dawood.nggeen.account.model.enums.UserStatus;
@@ -30,6 +31,7 @@ import java.util.Map;
 public class UserApplicationService {
     private final UserRepository userRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final VerificationTokenRepository verificationTokenRepository;
 
     @Transactional
     public void createUser(CreateUserRequest request) {
@@ -49,8 +51,7 @@ public class UserApplicationService {
                 UserStatus.ACTIVE
         );
 
-       User savedUser = userRepository.save(newUser);
-
+        User savedUser = userRepository.save(newUser);
 
         TokenGeneratorUtils tokenGenerator = new TokenGeneratorUtils();
         EmailVerificationToken verificationToken = EmailVerificationToken.create(
@@ -59,19 +60,19 @@ public class UserApplicationService {
                 savedUser.getId()
         );
 
-
+        EmailVerificationToken savedVerificationToken = verificationTokenRepository.save(verificationToken);
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
                 Map<String, String> event = new HashMap<>();
                 event.put("email", cleanedEmail);
-                event.put("token", )
+                event.put("token", savedVerificationToken.getTokenHash());
 
                 rabbitTemplate.convertAndSend(
                         RabbitMQConfig.NGGEEN_EXCHANGE,
                         RabbitMQConfig.EMAIL_VERIFICATION,
-
+                        event
                         );
             }
         });
