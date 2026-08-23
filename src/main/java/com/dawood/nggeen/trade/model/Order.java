@@ -28,6 +28,9 @@ public class Order extends MetaData {
     @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
+//    @Column( updatable = false)
+    private UUID accountId;
+
     @Column( updatable = false)
     private UUID userId;
 

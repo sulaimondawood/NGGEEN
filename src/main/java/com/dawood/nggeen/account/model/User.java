@@ -38,6 +38,9 @@ public class User extends MetaData {
     @Enumerated(value = EnumType.STRING)
     private UserStatus status;
 
+    @OneToMany(mappedBy = "user")
+    private Account account;
+
     public User(String email, String fullname, String password, UserStatus status) {
         this.email = email;
         this.fullname = fullname;

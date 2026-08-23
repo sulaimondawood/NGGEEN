@@ -1,5 +1,6 @@
 package com.dawood.nggeen.trade.service;
 
+import com.dawood.nggeen.trade.event.OrderCancelled;
 import com.dawood.nggeen.trade.event.TradeExecuted;
 import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.infrastructure.persistence.TradeRepository;
@@ -13,6 +14,7 @@ import net.openhft.chronicle.queue.ExcerptTailer;
 import net.openhft.chronicle.wire.DocumentContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +38,11 @@ public class TradeEventProjector {
 
     @Scheduled(fixedDelay = 200)
     public void flush() {
-        List<Trade> trades = new ArrayList<>(BATCH_SIZE);
         long startIdx = namedTailer.index();
+        List<Trade> trades = new ArrayList<>(BATCH_SIZE);
+        List<OrderCancelled> orderEventCancelled = new ArrayList<>();
         int reads = 0;
+
         while (reads < BATCH_SIZE) {
             try (DocumentContext dc = namedTailer.readingDocument()) {
                 if (!dc.isPresent()) {
@@ -50,22 +54,33 @@ public class TradeEventProjector {
                     if (event != null) {
                         trades.add(TradeMapper.fromEvent(event));
                     }
+                } else if (Objects.equals(EventType.OrderCancelled.name(), eventType)) {
+                    OrderCancelled eventCancelled = dc.wire().read("event").typedMarshallable();
+                    if (eventCancelled != null) {
+                        orderEventCancelled.add(eventCancelled);
+                    }
                 } else {
                     dc.wire().read("event").typedMarshallable();
                 }
                 reads++;
             }
         }
-
-        if (!trades.isEmpty()) {
-            try {
-                tradeRepository.saveAll(trades);
-            } catch (Exception e) {
-                log.error("Failed to project {} trades", trades.size(), e);
-                namedTailer.moveToIndex(startIdx);
-            }
+        if (trades.isEmpty()) {
+            return;
         }
+
+        try {
+            processBatchInTransaction(trades, orderEventCancelled);
+            tradeRepository.saveAll(trades);
+        } catch (Exception e) {
+            log.error("Failed to project {} trades", trades.size(), e);
+            namedTailer.moveToIndex(startIdx);
+        }
+
     }
 
+    @Transactional
+    public void processBatchInTransaction(List<Trade> trades, List<OrderCancelled> ordersCancelled) {
 
+    }
 }

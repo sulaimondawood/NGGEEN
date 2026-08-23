@@ -3,10 +3,7 @@ package com.dawood.nggeen.account.model;
 import com.dawood.nggeen.account.exception.InsufficientBalanceException;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.model.MetaData;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import org.springframework.http.HttpStatus;
@@ -15,7 +12,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "account_balances")
+@Table(name = "account_balances",
+        indexes = {@Index(name = "idx_balance_accound_id", columnList = "account_id")})
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

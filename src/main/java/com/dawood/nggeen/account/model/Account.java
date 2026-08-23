@@ -13,7 +13,9 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_accounts")
+@Table(name = "user_accounts",
+        indexes = {@Index(name = "idx_account_userId_type", columnList = "user_id, account_type")}
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
