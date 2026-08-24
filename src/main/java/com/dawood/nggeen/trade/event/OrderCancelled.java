@@ -18,16 +18,22 @@ public class OrderCancelled implements DomainEvent {
     private UUID orderId;
     private long sequenceNo;
     private String symbol;
+    private String lockedAsset;
+    private UUID accountId;
     private Instant timestamp;
     private BigDecimal quantityCancelled;
+    private BigDecimal amountToRelease;
     private CancelReason reason;
 
     public OrderCancelled(UUID orderId,
                           long sequenceNo,
                           String symbol,
+                          String lockedAsset,
+                          UUID accountId,
                           BigDecimal quantityCancelled,
+                          BigDecimal amountToRelease,
                           CancelReason reason) {
-        this(orderId, sequenceNo, symbol, Instant.now(), quantityCancelled, reason);
+        this(orderId, sequenceNo, symbol, lockedAsset, accountId, Instant.now(), quantityCancelled, amountToRelease, reason);
     }
 
     @Override

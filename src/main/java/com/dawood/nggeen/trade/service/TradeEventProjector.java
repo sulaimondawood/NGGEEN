@@ -1,5 +1,6 @@
 package com.dawood.nggeen.trade.service;
 
+import com.dawood.nggeen.account.application.LedgerSettlementService;
 import com.dawood.nggeen.trade.event.OrderCancelled;
 import com.dawood.nggeen.trade.event.TradeExecuted;
 import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
@@ -15,6 +16,7 @@ import net.openhft.chronicle.wire.DocumentContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,8 @@ public class TradeEventProjector {
 
     private final TradeRepository tradeRepository;
     private final ChronicleQueueService queueService;
+    private final LedgerSettlementService ledgerSettlementService;
+    private final TransactionTemplate transactionTemplate;
 
     private ExcerptTailer namedTailer;
 
@@ -39,8 +43,8 @@ public class TradeEventProjector {
     @Scheduled(fixedDelay = 200)
     public void flush() {
         long startIdx = namedTailer.index();
-        List<Trade> trades = new ArrayList<>(BATCH_SIZE);
-        List<OrderCancelled> orderEventCancelled = new ArrayList<>();
+        List<TradeExecuted> tradeExecutedEvents = new ArrayList<>(BATCH_SIZE);
+        List<OrderCancelled> orderEventCancelledEvents = new ArrayList<>();
         int reads = 0;
 
         while (reads < BATCH_SIZE) {
@@ -52,35 +56,49 @@ public class TradeEventProjector {
                 if (Objects.equals(eventType, EventType.TradeExecuted.name())) {
                     TradeExecuted event = dc.wire().read("event").typedMarshallable();
                     if (event != null) {
-                        trades.add(TradeMapper.fromEvent(event));
+                        tradeExecutedEvents.add(event);
                     }
                 } else if (Objects.equals(EventType.OrderCancelled.name(), eventType)) {
                     OrderCancelled eventCancelled = dc.wire().read("event").typedMarshallable();
                     if (eventCancelled != null) {
-                        orderEventCancelled.add(eventCancelled);
+                        orderEventCancelledEvents.add(eventCancelled);
                     }
-                } else {
-                    dc.wire().read("event").typedMarshallable();
                 }
                 reads++;
             }
         }
-        if (trades.isEmpty()) {
+        if (tradeExecutedEvents.isEmpty() && orderEventCancelledEvents.isEmpty()) {
             return;
         }
 
         try {
-            processBatchInTransaction(trades, orderEventCancelled);
-            tradeRepository.saveAll(trades);
+            transactionTemplate.executeWithoutResult((status) -> {
+                processBatchInTransaction(tradeExecutedEvents, orderEventCancelledEvents);
+
+            });
         } catch (Exception e) {
-            log.error("Failed to project {} trades", trades.size(), e);
+            log.error("Failed to project {} trades", tradeExecutedEvents.size(), e);
             namedTailer.moveToIndex(startIdx);
         }
 
     }
 
-    @Transactional
-    public void processBatchInTransaction(List<Trade> trades, List<OrderCancelled> ordersCancelled) {
+    private void processBatchInTransaction(List<TradeExecuted> tradesExecuted, List<OrderCancelled> ordersCancelled) {
+        List<Trade> trades = new ArrayList<>();
 
+        for (TradeExecuted tradeExecuted : tradesExecuted) {
+            trades.add(TradeMapper.fromEvent(tradeExecuted));
+            ledgerSettlementService.processTradeExecution(tradeExecuted);
+        }
+
+        for (OrderCancelled orderCancelled : ordersCancelled) {
+            ledgerSettlementService.processOrderCancellation(orderCancelled);
+        }
+
+        if (!trades.isEmpty()) {
+            tradeRepository.saveAll(trades);
+        }
+
+        log.debug("Atomically settled and saved {} trades and {} cancellations.", tradesExecuted.size(), ordersCancelled.size());
     }
 }

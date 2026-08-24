@@ -19,7 +19,11 @@ public class TradeExecuted implements DomainEvent {
     private UUID tradeId;
     private UUID buyOrderId;
     private UUID sellOrderId;
+    private UUID buyerAccountId;
+    private UUID sellerAccountId;
     private String symbol;
+    private String quoteAsset;
+    private String baseAsset;
     private Instant timestamp;
     private BigDecimal price;
     private BigDecimal executedQuantity;
@@ -29,11 +33,15 @@ public class TradeExecuted implements DomainEvent {
                          UUID tradeId,
                          UUID buyOrderId,
                          UUID sellOrderId,
+                         UUID buyerAccountId,
+                         UUID sellerAccountId,
                          String symbol,
+                         String quoteAsset,
+                         String baseAsset,
                          BigDecimal price,
                          BigDecimal executedQuantity,
                          OrderSide aggressorSide) {
-        this(sequenceNo, tradeId, buyOrderId, sellOrderId, symbol, Instant.now(), price, executedQuantity, aggressorSide);
+        this(sequenceNo, tradeId, buyOrderId, sellOrderId, buyerAccountId, sellerAccountId, symbol, quoteAsset, baseAsset, Instant.now(), price, executedQuantity, aggressorSide);
     }
 
     @Override

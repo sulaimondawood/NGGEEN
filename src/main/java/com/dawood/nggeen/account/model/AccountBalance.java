@@ -31,9 +31,11 @@ public class AccountBalance extends MetaData {
     private String asset;
 
     @Column(nullable = false)
+    @Builder.Default
     private BigDecimal available = BigDecimal.ZERO;
 
     @Column(nullable = false)
+    @Builder.Default
     private BigDecimal reserved = BigDecimal.ZERO;
 
     public AccountBalance(UUID accountId, String asset, BigDecimal available, BigDecimal reserved) {
@@ -43,7 +45,7 @@ public class AccountBalance extends MetaData {
         this.reserved = reserved;
     }
 
-    public void reserve(BigDecimal amount) {
+    public void lockFunds(BigDecimal amount) {
         validatePositiveAmount(amount);
         if (available.compareTo(amount) < 0) {
             throw new InsufficientBalanceException(
@@ -58,7 +60,7 @@ public class AccountBalance extends MetaData {
 
     }
 
-    public void release(BigDecimal amount) {
+    public void releaseLockedFunds(BigDecimal amount) {
         validatePositiveAmount(amount);
         if (reserved.compareTo(amount) < 0) {
             throw new InsufficientBalanceException(
@@ -81,6 +83,11 @@ public class AccountBalance extends MetaData {
             );
         }
         reserved = reserved.subtract(amount);
+    }
+
+    public void credit(BigDecimal amount){
+        validatePositiveAmount(amount);
+        available = available.add(amount);
     }
 
     private void validatePositiveAmount(BigDecimal amount) {

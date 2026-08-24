@@ -26,6 +26,7 @@ public class Account extends MetaData {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Enumerated(value = EnumType.STRING)

@@ -4,6 +4,7 @@ import com.dawood.nggeen.account.infrastructure.persistence.AccountBalanceReposi
 import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.AccountBalance;
+import com.dawood.nggeen.account.model.enums.AccountStatus;
 import com.dawood.nggeen.account.model.enums.AccountType;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
@@ -26,7 +27,7 @@ public class AccountBalanceService {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void reserveFunds(UUID userId, BigDecimal amountToReserve, String asset) {
-        Account account = accountRepository.findByUserIdAndAccountType(userId, AccountType.SPOT)
+        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(userId, AccountType.SPOT, AccountStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NOT_FOUND,
                         "Account not found",
                         HttpStatus.NOT_FOUND));
@@ -36,7 +37,7 @@ public class AccountBalanceService {
                         String.format("Balance record not found for asset %s", asset),
                         HttpStatus.NOT_FOUND));
 
-        balance.reserve(amountToReserve);
+        balance.lockFunds(amountToReserve);
 
         accountBalanceRepository.save(balance);
 
@@ -45,7 +46,7 @@ public class AccountBalanceService {
 
     @Transactional
     public void releaseFunds(UUID userId, BigDecimal amountToReserve, String asset){
-        Account account = accountRepository.findByUserIdAndAccountType(userId, AccountType.SPOT)
+        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(userId, AccountType.SPOT, AccountStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NOT_FOUND,
                         "Account not found",
                         HttpStatus.NOT_FOUND));
@@ -55,7 +56,7 @@ public class AccountBalanceService {
                         String.format("Balance record not found for asset %s", asset),
                         HttpStatus.NOT_FOUND));
 
-        balance.release(amountToReserve);
+        balance.releaseLockedFunds(amountToReserve);
 
         accountBalanceRepository.save(balance);
 

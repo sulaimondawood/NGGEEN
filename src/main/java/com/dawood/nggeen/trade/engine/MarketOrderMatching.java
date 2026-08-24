@@ -49,13 +49,19 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
             UUID tradeId = UuidCreator.getTimeOrderedEpoch();
             UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : restingOrder.getId();
             UUID sellOrderId = (orderSide == OrderSide.SELL) ? incomingOrder.getId() : restingOrder.getId();
+            UUID buyAccountId = (orderSide == OrderSide.BUY) ? incomingOrder.getAccountId() : restingOrder.getAccountId();
+            UUID sellAccountId = (orderSide == OrderSide.SELL) ? incomingOrder.getAccountId() : restingOrder.getAccountId();
 
             DomainEvent tradedEvent = new TradeExecuted(
                     tradeSeq,
                     tradeId,
                     buyOrderId,
                     sellOrderId,
+                    buyAccountId,
+                    sellAccountId,
                     incomingOrder.getSymbol(),
+                    incomingOrder.getQuoteAsset(),
+                    incomingOrder.getBaseAsset(),
                     bestOffer,
                     matchedQty,
                     orderSide
@@ -78,7 +84,7 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
 
         if (!incomingOrder.isFilled()) {
             long cancelSeq = orderBook.getSequenceGenerator().next();
-             handleResidualCancellation(
+            handleResidualCancellation(
                     incomingOrder,
                     cancelSeq,
                     incomingOrder.getRemainingQuantity(),
@@ -91,7 +97,7 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
         OrderStatus finalStatus = incomingOrder.getFilledQuantity().compareTo(BigDecimal.ZERO) > 0
                 ? OrderStatus.PARTIALLY_FILLED
                 : OrderStatus.CANCELED;
-      DomainEvent canceledEvent = incomingOrder.markCancelled(seq, quantityCancelled, reason, finalStatus);
-      chronicleQueueService.appendEvent(EventType.OrderCancelled,canceledEvent);
+        DomainEvent canceledEvent = incomingOrder.markCancelled(seq, quantityCancelled, reason, finalStatus);
+        chronicleQueueService.appendEvent(EventType.OrderCancelled, canceledEvent);
     }
 }

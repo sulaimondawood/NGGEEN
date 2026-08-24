@@ -1,8 +1,12 @@
 package com.dawood.nggeen.trade.application;
 
 import com.dawood.nggeen.account.application.AccountBalanceService;
+import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.account.infrastructure.persistence.UserRepository;
+import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.User;
+import com.dawood.nggeen.account.model.enums.AccountStatus;
+import com.dawood.nggeen.account.model.enums.AccountType;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.shared.exception.NggeenException;
@@ -43,6 +47,7 @@ public class TradeApplicationService {
     private final InstrumentValidator instrumentValidator;
     private final UserRepository userRepository;
     private final AccountBalanceService accountBalanceService;
+    private final AccountRepository accountRepository;
 
     private static final long SNAPSHOT_INTERVAL = 50_000L;
 
@@ -59,12 +64,17 @@ public class TradeApplicationService {
                         ErrorCode.NOT_FOUND,
                         "User not found",
                         HttpStatus.NOT_FOUND));
+        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(currentUser.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.NOT_FOUND,
+                        "Account not found",
+                        HttpStatus.NOT_FOUND));
 
         OrderBook instrumentOrderBook = orderBookRegistry.getByInstrumentSymbol(orderRequest.getSymbol());
         Instrument instrument = orderBookRegistry.getInstrumentBySymbol(orderRequest.getSymbol());
 
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest, UuidCreator.getTimeOrderedEpoch());
-        incomingOrder.setAccountId(currentUser.getId());
+        incomingOrder.setAccountId(account.getId());
 
         instrumentValidator.validate(incomingOrder, instrument);
 

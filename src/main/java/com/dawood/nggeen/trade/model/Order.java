@@ -28,7 +28,7 @@ public class Order extends MetaData {
     @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
-//    @Column( updatable = false)
+    @Column( updatable = false)
     private UUID accountId;
 
     @Column( updatable = false)
@@ -36,6 +36,12 @@ public class Order extends MetaData {
 
     @Column(nullable = false)
     private String symbol;
+
+    @Column(nullable = false)
+    private String baseAsset;
+
+    @Column(nullable = false)
+    private String quoteAsset;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -100,10 +106,10 @@ public class Order extends MetaData {
     }
 
     public boolean isSelfTrade(Order restingOrder){
-        if (restingOrder == null || this.userId == null || restingOrder.getUserId() == null) {
+        if (restingOrder == null || this.accountId == null || restingOrder.getAccountId() == null) {
             return false;
         }
-        return this.userId.equals(restingOrder.getUserId());
+        return this.accountId.equals(restingOrder.getAccountId());
     }
 
     public DomainEvent markAccepted(long seq) {
@@ -122,13 +128,19 @@ public class Order extends MetaData {
     public DomainEvent markCancelled(long seq,
                                      BigDecimal quantityCancelled,
                                      CancelReason reason,
-                                     OrderStatus status) {
+                                     OrderStatus status,
+                                     String lockedAsset,
+                                     UUID accountId,
+                                     BigDecimal amountToRelease) {
         this.status = status;
         return new OrderCancelled(
                 id,
                 seq,
                 symbol,
+                lockedAsset,
+                accountId,
                 quantityCancelled,
+                amountToRelease,
                 reason
         );
     }
