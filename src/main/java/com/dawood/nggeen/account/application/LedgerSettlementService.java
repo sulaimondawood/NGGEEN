@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -23,12 +24,17 @@ public class LedgerSettlementService {
     private final AccountBalanceRepository accountBalanceRepository;
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void processTradeExecution(TradeExecuted tradeExecuted) {
+    public boolean processTradeExecution(TradeExecuted tradeExecuted) {
         BigDecimal price = tradeExecuted.getPrice();
         BigDecimal executedQty = tradeExecuted.getExecutedQuantity();
 
         UUID buyerAccountId = tradeExecuted.getBuyerAccountId();
         UUID sellerAccountId = tradeExecuted.getSellerAccountId();
+
+        if (Objects.equals(buyerAccountId, sellerAccountId)) {
+            log.warn("Self-trade detected for trade {}. Skipping ledger balance mutation.", tradeExecuted.getTradeId());
+            return false;
+        }
 
         String quoteAsset = tradeExecuted.getQuoteAsset();
         String baseAsset = tradeExecuted.getBaseAsset();
@@ -65,6 +71,7 @@ public class LedgerSettlementService {
 
         log.debug("Settled trade {}: Buyer received {} {}, Seller received {} {}",
                 tradeExecuted.getTradeId(), tradeExecuted.getExecutedQuantity(), tradeExecuted.getBaseAsset(), quoteAmount, tradeExecuted.getQuoteAsset());
+        return true;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)

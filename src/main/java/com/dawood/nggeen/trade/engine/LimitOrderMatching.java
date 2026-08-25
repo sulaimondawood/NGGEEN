@@ -38,6 +38,10 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             }
 
             Order firstRestingOrder = restingOrders.getFirst();
+            if (incomingOrder.isSelfTrade(firstRestingOrder)) {
+                log.debug("Self trade cancel triggered for account {}. Halting taker execution.", incomingOrder.getAccountId());
+                break;
+            }
 
             boolean matchablePrice = incomingOrder.isMatchablePrice(firstRestingOrder);
             if (!matchablePrice) break;
@@ -58,13 +62,19 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             UUID tradeId = UuidCreator.getTimeOrderedEpoch();
             UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : firstRestingOrder.getId();
             UUID sellOrderId = (orderSide == OrderSide.SELL) ? incomingOrder.getId() : firstRestingOrder.getId();
+            UUID buyAccountId = (orderSide == OrderSide.BUY) ? incomingOrder.getAccountId() : firstRestingOrder.getAccountId();
+            UUID sellAccountId = (orderSide == OrderSide.SELL) ? incomingOrder.getAccountId() : firstRestingOrder.getAccountId();
 
             DomainEvent tradedEvent = new TradeExecuted(
                     tradeSeq,
                     tradeId,
                     buyOrderId,
                     sellOrderId,
+                    buyAccountId,
+                    sellAccountId,
                     incomingOrder.getSymbol(),
+                    incomingOrder.getQuoteAsset(),
+                    incomingOrder.getBaseAsset(),
                     bestOffer,
                     matchedQty,
                     orderSide
@@ -72,7 +82,6 @@ public class LimitOrderMatching implements OrderMatchingStrategy {
             chronicleQueueService.appendEvent(EventType.TradeExecuted, tradedEvent);
 
             if (firstRestingOrder.isFilled()) {
-                System.out.println("Filled");
                 restingOrders.removeFirst();
                 if (firstRestingOrder.getId() != null) {
                     orderBook.getOrderMap().remove(firstRestingOrder.getId());

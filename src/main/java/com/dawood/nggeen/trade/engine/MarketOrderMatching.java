@@ -11,6 +11,7 @@ import com.dawood.nggeen.trade.model.enums.OrderSide;
 import com.dawood.nggeen.trade.model.enums.OrderStatus;
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,6 +21,7 @@ import java.util.UUID;
 
 @Component(value = "MARKET")
 @RequiredArgsConstructor
+@Slf4j
 public class MarketOrderMatching implements OrderMatchingStrategy {
     private final ChronicleQueueService chronicleQueueService;
 
@@ -44,7 +46,8 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
 
             Order restingOrder = restingOrdersAtPriceLevel.getFirst();
             if (incomingOrder.isSelfTrade(restingOrder)) {
-                continue;
+                log.debug("Self trade cancel triggered for account {}. Halting taker execution.", incomingOrder.getAccountId());
+                break;
             }
 
             BigDecimal matchedQty = restingOrder.getRemainingQuantity().min(incomingOrder.getRemainingQuantity());

@@ -13,7 +13,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "account_balances",
-        indexes = {@Index(name = "idx_balance_accound_id", columnList = "account_id")})
+        indexes = {@Index(name = "idx_balance_account_id", columnList = "account_id")},
+        uniqueConstraints = {
+        @UniqueConstraint(name = "uk_balance_account_asset", columnNames = {"account_id", "asset"})
+})
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -24,7 +27,7 @@ public class AccountBalance extends MetaData {
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private UUID accountId;
 
     @Column(nullable = false)
@@ -85,7 +88,7 @@ public class AccountBalance extends MetaData {
         reserved = reserved.subtract(amount);
     }
 
-    public void credit(BigDecimal amount){
+    public void credit(BigDecimal amount) {
         validatePositiveAmount(amount);
         available = available.add(amount);
     }

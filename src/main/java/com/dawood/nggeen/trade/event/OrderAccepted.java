@@ -18,7 +18,11 @@ import java.util.UUID;
 public class OrderAccepted implements DomainEvent {
     private UUID orderId;
     private long sequenceNo;
+    private UUID accountId;
+    private UUID userId;
     private String symbol;
+    private String baseAsset;
+    private String quoteAsset;
     private Instant timestamp;
     private BigDecimal price;
     private BigDecimal stopPrice;
@@ -26,10 +30,19 @@ public class OrderAccepted implements DomainEvent {
     private OrderSide orderSide;
     private OrderType orderType;
 
-    public OrderAccepted(UUID orderId, long sequenceNo, String symbol,
-                         BigDecimal price, BigDecimal stopPrice, BigDecimal quantity,
-                         OrderSide orderSide, OrderType orderType) {
-        this(orderId, sequenceNo, symbol, Instant.now(), price, stopPrice, quantity, orderSide, orderType);
+    public OrderAccepted(UUID orderId,
+                         long sequenceNo,
+                         UUID accountId,
+                         UUID userId,
+                         String symbol,
+                         String baseAsset,
+                         String quoteAsset,
+                         BigDecimal price,
+                         BigDecimal stopPrice,
+                         BigDecimal quantity,
+                         OrderSide orderSide,
+                         OrderType orderType) {
+        this(orderId, sequenceNo, accountId, userId, symbol, baseAsset, quoteAsset, Instant.now(), price, stopPrice, quantity, orderSide, orderType);
     }
 
     @Override

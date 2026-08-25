@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.openhft.chronicle.queue.ExcerptTailer;
 import net.openhft.chronicle.wire.DocumentContext;
+import net.openhft.chronicle.wire.ValueIn;
+import net.openhft.chronicle.wire.Wire;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,9 +54,17 @@ public class TradeEventProjector {
                 if (!dc.isPresent()) {
                     break;
                 }
-                String eventType = dc.wire().read("eventType").text();
+
+                Wire wire = dc.wire();
+                if(wire == null){
+                    continue;
+                }
+
+                String eventType = wire.read("eventType").text();
+                ValueIn eventValueIn = wire.read("event");
+
                 if (Objects.equals(eventType, EventType.TradeExecuted.name())) {
-                    TradeExecuted event = dc.wire().read("event").typedMarshallable();
+                    TradeExecuted event = eventValueIn.typedMarshallable();
                     if (event != null) {
                         tradeExecutedEvents.add(event);
                     }
@@ -87,8 +97,10 @@ public class TradeEventProjector {
         List<Trade> trades = new ArrayList<>();
 
         for (TradeExecuted tradeExecuted : tradesExecuted) {
-            trades.add(TradeMapper.fromEvent(tradeExecuted));
-            ledgerSettlementService.processTradeExecution(tradeExecuted);
+            boolean settled = ledgerSettlementService.processTradeExecution(tradeExecuted);
+            if (settled) {
+                trades.add(TradeMapper.fromEvent(tradeExecuted));
+            }
         }
 
         for (OrderCancelled orderCancelled : ordersCancelled) {

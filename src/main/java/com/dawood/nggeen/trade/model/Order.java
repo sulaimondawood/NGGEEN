@@ -28,10 +28,10 @@ public class Order extends MetaData {
     @Column(nullable = false, updatable = false, unique = true)
     private UUID id;
 
-    @Column( updatable = false)
+    @Column( updatable = false,  nullable = false)
     private UUID accountId;
 
-    @Column( updatable = false)
+    @Column( updatable = false,  nullable = false)
     private UUID userId;
 
     @Column(nullable = false)
@@ -120,12 +120,17 @@ public class Order extends MetaData {
         return new OrderAccepted(
                 id,
                 seq,
+                accountId,
+                userId,
                 symbol,
+                baseAsset,
+                quoteAsset,
                 price,
                 stopPrice,
                 quantity,
                 orderSide,
-                orderType);
+                orderType
+        );
     }
 
     public DomainEvent markCancelled(long seq,
@@ -154,13 +159,18 @@ public class Order extends MetaData {
         }
         return Order.builder()
                 .id(event.getOrderId())
+                .accountId(event.getAccountId())
+                .userId(event.getUserId())
                 .symbol(event.symbol())
+                .baseAsset(event.getBaseAsset())
+                .quoteAsset(event.getQuoteAsset())
                 .orderType(event.getOrderType())
                 .orderSide(event.getOrderSide())
                 .price(event.getPrice())
                 .stopPrice(event.getStopPrice())
                 .quantity(event.getQuantity())
                 .remainingQuantity(event.getQuantity())
+                .filledQuantity(BigDecimal.ZERO)
                 .status(OrderStatus.NEW)
                 .build();
     }
