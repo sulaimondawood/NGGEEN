@@ -14,7 +14,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "user_accounts",
-        indexes = {@Index(name = "idx_account_userId_type", columnList = "user_id, account_type")}
+        indexes = {@Index(name = "idx_account_userId_type", columnList = "user_id, account_type")},
+        uniqueConstraints = {@UniqueConstraint(name = "uk_user_account_types", columnNames = {"user_id", "account_type"})}
+
 )
 @AllArgsConstructor
 @NoArgsConstructor

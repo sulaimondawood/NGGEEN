@@ -28,6 +28,8 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
         OrderSide orderSide = incomingOrder.getOrderSide();
         TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderSide = orderBook.oppositeOrderBookSide(orderSide);
 
+        BigDecimal cumulativeQuoteSpent = BigDecimal.ZERO;
+
         while (!oppositeOrderSide.isEmpty() && !incomingOrder.isFilled()) {
             BigDecimal bestOffer = orderBook.getBestBidOrOffer(orderSide);
             if (bestOffer == null) {
@@ -41,12 +43,20 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
             }
 
             Order restingOrder = restingOrdersAtPriceLevel.getFirst();
+            if (incomingOrder.isSelfTrade(restingOrder)) {
+                continue;
+            }
+
             BigDecimal matchedQty = restingOrder.getRemainingQuantity().min(incomingOrder.getRemainingQuantity());
+            BigDecimal tradeQuoteAmount = bestOffer.multiply(matchedQty);
+            cumulativeQuoteSpent = cumulativeQuoteSpent.add(tradeQuoteAmount);
+
             restingOrder.fillQuantity(matchedQty);
             incomingOrder.fillQuantity(matchedQty);
 
             long tradeSeq = orderBook.getSequenceGenerator().next();
             UUID tradeId = UuidCreator.getTimeOrderedEpoch();
+
             UUID buyOrderId = (orderSide == OrderSide.BUY) ? incomingOrder.getId() : restingOrder.getId();
             UUID sellOrderId = (orderSide == OrderSide.SELL) ? incomingOrder.getId() : restingOrder.getId();
             UUID buyAccountId = (orderSide == OrderSide.BUY) ? incomingOrder.getAccountId() : restingOrder.getAccountId();
@@ -83,21 +93,39 @@ public class MarketOrderMatching implements OrderMatchingStrategy {
         }
 
         if (!incomingOrder.isFilled()) {
-            long cancelSeq = orderBook.getSequenceGenerator().next();
-            handleResidualCancellation(
-                    incomingOrder,
-                    cancelSeq,
-                    incomingOrder.getRemainingQuantity(),
-                    CancelReason.NO_LIQUIDITY);
+            handleResidualCancellation(incomingOrder, orderBook, cumulativeQuoteSpent);
         }
 
     }
 
-    private void handleResidualCancellation(Order incomingOrder, long seq, BigDecimal quantityCancelled, CancelReason reason) {
+    private void handleResidualCancellation(Order incomingOrder, OrderBook orderBook, BigDecimal cumulativeQuoteSpent) {
+        long cancelSeq = orderBook.getSequenceGenerator().next();
+        BigDecimal unfilledQty = incomingOrder.getRemainingQuantity();
+        UUID accountId = incomingOrder.getAccountId();
         OrderStatus finalStatus = incomingOrder.getFilledQuantity().compareTo(BigDecimal.ZERO) > 0
                 ? OrderStatus.PARTIALLY_FILLED
                 : OrderStatus.CANCELED;
-        DomainEvent canceledEvent = incomingOrder.markCancelled(seq, quantityCancelled, reason, finalStatus);
+
+        String assetToLock;
+        BigDecimal amountToRelease;
+
+        if (incomingOrder.getOrderSide() == OrderSide.BUY) {
+            assetToLock = incomingOrder.getQuoteAsset();
+            amountToRelease = incomingOrder.getLockedAmount().subtract(cumulativeQuoteSpent);
+        } else {
+            assetToLock = incomingOrder.getBaseAsset();
+            amountToRelease = unfilledQty;
+        }
+
+        DomainEvent canceledEvent = incomingOrder.markCancelled(
+                cancelSeq,
+                unfilledQty,
+                CancelReason.NO_LIQUIDITY,
+                finalStatus,
+                assetToLock,
+                accountId,
+                amountToRelease
+        );
         chronicleQueueService.appendEvent(EventType.OrderCancelled, canceledEvent);
     }
 }

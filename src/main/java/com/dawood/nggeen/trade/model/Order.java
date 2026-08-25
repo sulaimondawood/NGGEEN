@@ -57,6 +57,9 @@ public class Order extends MetaData {
     @Column(nullable = false)
     private BigDecimal quantity;
 
+    @Transient
+    private BigDecimal lockedAmount;
+
     @Column(nullable = false)
     @Builder.Default
     private BigDecimal filledQuantity = BigDecimal.ZERO;
