@@ -151,7 +151,7 @@ public class TradeApplicationService {
             return request.getPrice().multiply(request.getQuantity());
         }
 
-        BigDecimal bestAsk = instrumentOrderbook.getBestBidOrOffer(OrderSide.BUY);
+        BigDecimal bestAsk = instrumentOrderbook.getLatestBestAsk();
         if (bestAsk == null) {
             throw new InvalidOrderException(
                     ErrorCode.INVALID_REQUEST,
