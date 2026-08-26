@@ -24,12 +24,16 @@ public class OrderMapper {
     public static Order fromEvent(OrderAccepted event) {
         return Order.builder()
                 .id(event.getOrderId())
+                .accountId(event.getAccountId())
+                .userId(event.getUserId())
                 .symbol(event.symbol())
-                .orderType(event.getOrderType())
-                .orderSide(event.getOrderSide())
+                .baseAsset(event.getBaseAsset())
+                .quoteAsset(event.getQuoteAsset())
                 .price(event.getPrice())
                 .stopPrice(event.getStopPrice())
                 .quantity(event.getQuantity())
+                .orderType(event.getOrderType())
+                .orderSide(event.getOrderSide())
                 .remainingQuantity(event.getQuantity())
                 .build();
     }

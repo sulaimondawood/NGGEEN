@@ -49,14 +49,14 @@ public class DataInitializer implements CommandLineRunner {
                 UserStatus.ACTIVE
         );
 
-        User trader2 = new User(
+        User trader2 = User.create(
                 "marketmaker@nggeen.com",
                 "Jane Doe",
                 defaultPasswordHash,
                 UserStatus.ACTIVE
         );
 
-        User suspendedUser = new User(
+        User suspendedUser = User.create(
                 "newbie@nggeen.com",
                 "Alex Smith",
                 defaultPasswordHash,

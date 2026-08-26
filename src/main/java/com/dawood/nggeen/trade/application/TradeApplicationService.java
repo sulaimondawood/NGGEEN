@@ -59,7 +59,8 @@ public class TradeApplicationService {
                     HttpStatus.BAD_REQUEST);
         }
 
-        User currentUser = userRepository.findByEmailIgnoreCase("trader1@nggeen.com")
+        User currentUser = userRepository.findByEmailIgnoreCase("marketmaker@nggeen.com")
+//        User currentUser = userRepository.findByEmailIgnoreCase("trader1@nggeen.com")
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.NOT_FOUND,
                         "User not found",
@@ -75,6 +76,9 @@ public class TradeApplicationService {
 
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest, UuidCreator.getTimeOrderedEpoch());
         incomingOrder.setAccountId(account.getId());
+        incomingOrder.setUserId(currentUser.getId());
+        incomingOrder.setBaseAsset(instrument.getBaseAsset());
+        incomingOrder.setQuoteAsset(instrument.getQuoteAsset());
 
         instrumentValidator.validate(incomingOrder, instrument);
 
