@@ -64,7 +64,7 @@ public class OrderBook {
 
     }
 
-    public void cancelOrder(UUID orderId) {
+    public Order cancelOrder(UUID orderId) {
         if (orderId == null) throw new IllegalArgumentException("Invalid order id");
 
         Order pendingOrder = orderMap.get(orderId);
@@ -89,8 +89,15 @@ public class OrderBook {
         }
 
         pendingOrder.setStatus(OrderStatus.CANCELED);
-        orderMap.remove(orderId);
+        Order removedOrder = orderMap.remove(orderId);
 
+        refreshTopOfBook();
+
+        return removedOrder;
+    }
+
+    public Order findOrder(UUID orderId) {
+        return this.orderMap.get(orderId);
     }
 
     public TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderBookSide(OrderSide orderSide) {

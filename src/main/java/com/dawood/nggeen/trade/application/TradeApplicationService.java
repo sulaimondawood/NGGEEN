@@ -11,6 +11,7 @@ import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.shared.exception.NggeenException;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
+import com.dawood.nggeen.trade.api.rest.dto.CancelOrderRequest;
 import com.dawood.nggeen.trade.api.rest.dto.OrderResponse;
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
 import com.dawood.nggeen.trade.event.DomainEvent;
@@ -20,9 +21,7 @@ import com.dawood.nggeen.trade.model.Instrument;
 import com.dawood.nggeen.trade.model.Order;
 import com.dawood.nggeen.trade.model.OrderBook;
 import com.dawood.nggeen.trade.model.OrderBookSnapshot;
-import com.dawood.nggeen.trade.model.enums.EventType;
-import com.dawood.nggeen.trade.model.enums.OrderSide;
-import com.dawood.nggeen.trade.model.enums.OrderType;
+import com.dawood.nggeen.trade.model.enums.*;
 import com.dawood.nggeen.trade.service.FileSnapShotStore;
 import com.dawood.nggeen.trade.service.InstrumentValidator;
 import com.dawood.nggeen.trade.service.OrderBookRegistry;
@@ -103,6 +102,73 @@ public class TradeApplicationService {
                 tokenToLock));
     }
 
+    public void cancelRestingOrder(CancelOrderRequest request) {
+        User currentUser = userRepository.findByEmailIgnoreCase("marketmaker@nggeen.com")
+//        User currentUser = userRepository.findByEmailIgnoreCase("trader1@nggeen.com")
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.NOT_FOUND,
+                        "User not found",
+                        HttpStatus.NOT_FOUND));
+
+        Account currentUserAccount = accountRepository.findByUserIdAndAccountTypeAndStatus(currentUser.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.NOT_FOUND,
+                        "Account not found",
+                        HttpStatus.NOT_FOUND));
+
+        UUID requestingUserId = currentUser.getId();
+        UUID requestingAccountId = currentUserAccount.getId();
+        UUID targetOrderId = request.orderId();
+        String symbol = request.symbol();
+
+        ExecutorService executorService = orderBookRegistry.getExecutorFor(request.symbol());
+        OrderBook instrumentOrderBook = orderBookRegistry.getByInstrumentSymbol(request.symbol());
+
+        executorService.submit(() -> {
+            try {
+                Order restingOrder = instrumentOrderBook.findOrder(targetOrderId);
+                if (restingOrder == null) {
+                    log.warn("Cancel rejected: Order {} not active on symbol {}", targetOrderId, symbol);
+                    return;
+                }
+
+                if (!requestingUserId.equals(restingOrder.getUserId()) ||
+                        !requestingAccountId.equals(restingOrder.getAccountId())) {
+                    log.warn("Cancel rejected: Order {} not owned by user {}", targetOrderId, requestingUserId);
+                    return;
+                }
+
+                Order cancelledOrder = instrumentOrderBook.cancelOrder(targetOrderId);
+                if (cancelledOrder == null) {
+                    return;
+                }
+
+                boolean isBuy = cancelledOrder.getOrderSide() == OrderSide.BUY;
+                String assetLocked = isBuy ? cancelledOrder.getQuoteAsset() : cancelledOrder.getBaseAsset();
+
+                BigDecimal amountToRelease = isBuy
+                        ? cancelledOrder.getRemainingQuantity().multiply(cancelledOrder.getPrice())
+                        : cancelledOrder.getRemainingQuantity();
+
+                long seq = instrumentOrderBook.getSequenceGenerator().next();
+
+                DomainEvent cancelledOrderEvent = cancelledOrder.markCancelled(
+                        seq,
+                        cancelledOrder.getRemainingQuantity(),
+                        CancelReason.USER_REQUESTED,
+                        OrderStatus.CANCELED,
+                        assetLocked,
+                        requestingAccountId,
+                        amountToRelease
+                );
+                chronicleQueueService.appendEvent(EventType.OrderCancelled, cancelledOrderEvent);
+
+            } catch (Exception e) {
+                log.error("Unexpected failure during cancellation of order {}", targetOrderId, e);
+            }
+        });
+    }
+
     public List<OrderResponse> getActiveOrders() {
         return orderBookRegistry.getAllOrderBooks().values().stream()
                 .flatMap(orderBook -> orderBook.getActiveOrders().stream())
@@ -131,14 +197,14 @@ public class TradeApplicationService {
             }
 
         } catch (Exception e) {
-            log.error("Failed to process order {} on symbol {}", incomingOrder.getId(), symbol, e);
-            accountBalanceService.releaseFunds(userId, amountToRelease, assetLocked);
-            throw new NggeenException(
-                    ErrorCode.ORDER_EXECUTION_FAILED,
-                    "Order execution failed: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    e
-            );
+            log.error("CRITICAL: Failed to process order {} on symbol {}. Reason: {}",
+                    incomingOrder.getId(), symbol, e.getMessage(), e);
+            try {
+                accountBalanceService.releaseFunds(userId, amountToRelease, assetLocked);
+            } catch (Exception releaseEx) {
+                log.error("FATAL: Failed to release locked funds for user {} on failed order {}",
+                        userId, incomingOrder.getId(), releaseEx);
+            }
         }
     }
 
@@ -169,4 +235,5 @@ public class TradeApplicationService {
         BigDecimal slippageBuffer = new BigDecimal("1.02");
         return baseCost.multiply(slippageBuffer);
     }
+
 }
