@@ -30,6 +30,9 @@ public class OrderBook {
     private TreeMap<BigDecimal, LinkedList<Order>> asks = new TreeMap<>();
     private Map<UUID, Order> orderMap = new ConcurrentHashMap<>();
 
+    private volatile BigDecimal latestBestBid;
+    private volatile BigDecimal latestBestAsk;
+
     public OrderBook(Map<String, OrderMatchingStrategy> strategy) {
         this.matchingStrategies = strategy;
     }
@@ -40,6 +43,7 @@ public class OrderBook {
             throw new IllegalArgumentException("No matcher for order type: " + incomingOrder.getOrderType());
         }
         matchingStrategy.match(incomingOrder, this);
+        refreshTopOfBook(); //Update prices after match
     }
 
     public BigDecimal getBestBidOrOffer(OrderSide orderSide) {
@@ -60,7 +64,7 @@ public class OrderBook {
 
     }
 
-    public void cancelOrder(UUID orderId) {
+    public Order cancelOrder(UUID orderId) {
         if (orderId == null) throw new IllegalArgumentException("Invalid order id");
 
         Order pendingOrder = orderMap.get(orderId);
@@ -85,8 +89,15 @@ public class OrderBook {
         }
 
         pendingOrder.setStatus(OrderStatus.CANCELED);
-        orderMap.remove(orderId);
+        Order removedOrder = orderMap.remove(orderId);
 
+        refreshTopOfBook();
+
+        return removedOrder;
+    }
+
+    public Order findOrder(UUID orderId) {
+        return this.orderMap.get(orderId);
     }
 
     public TreeMap<BigDecimal, LinkedList<Order>> oppositeOrderBookSide(OrderSide orderSide) {
@@ -151,6 +162,11 @@ public class OrderBook {
                 addOrderToBook(order);
             }
         }
+    }
+
+    private void refreshTopOfBook() {
+        latestBestBid = getBestBid();
+        latestBestAsk = getBestAsk();
     }
 
     private List<Order> flattenSide(TreeMap<BigDecimal, LinkedList<Order>> side) {

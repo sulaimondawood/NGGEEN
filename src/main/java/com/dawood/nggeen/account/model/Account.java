@@ -10,10 +10,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_accounts")
+@Table(name = "user_accounts",
+        indexes = {@Index(name = "idx_account_userId_type", columnList = "user_id, account_type")},
+        uniqueConstraints = {@UniqueConstraint(name = "uk_user_account_types", columnNames = {"user_id", "account_type"})}
+
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -24,7 +30,12 @@ public class Account extends MetaData {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToMany(mappedBy = "account")
+    @Builder.Default
+    private List<AccountBalance> balances = new ArrayList<>();
 
     @Enumerated(value = EnumType.STRING)
     @Column(nullable = false)

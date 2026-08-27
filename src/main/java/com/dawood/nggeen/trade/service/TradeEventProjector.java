@@ -1,5 +1,7 @@
 package com.dawood.nggeen.trade.service;
 
+import com.dawood.nggeen.account.application.LedgerSettlementService;
+import com.dawood.nggeen.trade.event.OrderCancelled;
 import com.dawood.nggeen.trade.event.TradeExecuted;
 import com.dawood.nggeen.trade.infrastructure.journal.chronicle.ChronicleQueueService;
 import com.dawood.nggeen.trade.infrastructure.persistence.TradeRepository;
@@ -11,8 +13,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.openhft.chronicle.queue.ExcerptTailer;
 import net.openhft.chronicle.wire.DocumentContext;
+import net.openhft.chronicle.wire.ValueIn;
+import net.openhft.chronicle.wire.Wire;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +32,8 @@ public class TradeEventProjector {
 
     private final TradeRepository tradeRepository;
     private final ChronicleQueueService queueService;
+    private final LedgerSettlementService ledgerSettlementService;
+    private final TransactionTemplate transactionTemplate;
 
     private ExcerptTailer namedTailer;
 
@@ -36,36 +44,73 @@ public class TradeEventProjector {
 
     @Scheduled(fixedDelay = 200)
     public void flush() {
-        List<Trade> trades = new ArrayList<>(BATCH_SIZE);
         long startIdx = namedTailer.index();
+        List<TradeExecuted> tradeExecutedEvents = new ArrayList<>(BATCH_SIZE);
+        List<OrderCancelled> orderEventCancelledEvents = new ArrayList<>();
         int reads = 0;
+
         while (reads < BATCH_SIZE) {
             try (DocumentContext dc = namedTailer.readingDocument()) {
                 if (!dc.isPresent()) {
                     break;
                 }
-                String eventType = dc.wire().read("eventType").text();
+
+                Wire wire = dc.wire();
+                if(wire == null){
+                    continue;
+                }
+
+                String eventType = wire.read("eventType").text();
+                ValueIn eventValueIn = wire.read("event");
+
                 if (Objects.equals(eventType, EventType.TradeExecuted.name())) {
-                    TradeExecuted event = dc.wire().read("event").typedMarshallable();
+                    TradeExecuted event = eventValueIn.typedMarshallable();
                     if (event != null) {
-                        trades.add(TradeMapper.fromEvent(event));
+                        tradeExecutedEvents.add(event);
                     }
-                } else {
-                    dc.wire().read("event").typedMarshallable();
+                } else if (Objects.equals(EventType.OrderCancelled.name(), eventType)) {
+                    OrderCancelled eventCancelled = eventValueIn.typedMarshallable();
+                    if (eventCancelled != null) {
+                        orderEventCancelledEvents.add(eventCancelled);
+                    }
                 }
                 reads++;
             }
         }
-
-        if (!trades.isEmpty()) {
-            try {
-                tradeRepository.saveAll(trades);
-            } catch (Exception e) {
-                log.error("Failed to project {} trades", trades.size(), e);
-                namedTailer.moveToIndex(startIdx);
-            }
+        if (tradeExecutedEvents.isEmpty() && orderEventCancelledEvents.isEmpty()) {
+            return;
         }
+
+        try {
+            transactionTemplate.executeWithoutResult((status) -> {
+                processBatchInTransaction(tradeExecutedEvents, orderEventCancelledEvents);
+
+            });
+        } catch (Exception e) {
+            log.error("Failed to project {} trades", tradeExecutedEvents.size(), e);
+            namedTailer.moveToIndex(startIdx);
+        }
+
     }
 
+    private void processBatchInTransaction(List<TradeExecuted> tradesExecuted, List<OrderCancelled> ordersCancelled) {
+        List<Trade> trades = new ArrayList<>();
 
+        for (TradeExecuted tradeExecuted : tradesExecuted) {
+            boolean settled = ledgerSettlementService.processTradeExecution(tradeExecuted);
+            if (settled) {
+                trades.add(TradeMapper.fromEvent(tradeExecuted));
+            }
+        }
+
+        for (OrderCancelled orderCancelled : ordersCancelled) {
+            ledgerSettlementService.processOrderCancellation(orderCancelled);
+        }
+
+        if (!trades.isEmpty()) {
+            tradeRepository.saveAll(trades);
+        }
+
+        log.debug("Atomically settled and saved {} trades and {} cancellations.", tradesExecuted.size(), ordersCancelled.size());
+    }
 }

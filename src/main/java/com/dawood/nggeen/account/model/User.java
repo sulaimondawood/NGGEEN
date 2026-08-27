@@ -4,10 +4,13 @@ import com.dawood.nggeen.account.model.enums.UserStatus;
 import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -19,6 +22,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Builder
 public class User extends MetaData {
 
     @Id
@@ -38,15 +42,17 @@ public class User extends MetaData {
     @Enumerated(value = EnumType.STRING)
     private UserStatus status;
 
-    public User(String email, String fullname, String password, UserStatus status) {
-        this.email = email;
-        this.fullname = fullname;
-        this.passwordHash = password;
-        this.status = status;
-    }
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Account> account = new ArrayList<>();
 
-    public static User create(String email, String username, String password, UserStatus status) {
-        return new User(email, username, password, status);
+    public static User create(String email, String fullname, String passwordHash, UserStatus status) {
+        User user = new User();
+        user.email = email;
+        user.fullname = fullname;
+        user.passwordHash = passwordHash;
+        user.status = status;
+        return user;
     }
 
     public boolean canTrade() {
