@@ -27,8 +27,9 @@ public class AccountBalance extends MetaData {
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
-    @Column(nullable = false, updatable = false)
-    private UUID accountId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", insertable = false, updatable = false)
+    private Account account;
 
     @Column(nullable = false)
     private String asset;
@@ -41,8 +42,8 @@ public class AccountBalance extends MetaData {
     @Builder.Default
     private BigDecimal reserved = BigDecimal.ZERO;
 
-    public AccountBalance(UUID accountId, String asset, BigDecimal available, BigDecimal reserved) {
-        this.accountId = accountId;
+    public AccountBalance(Account account, String asset, BigDecimal available, BigDecimal reserved) {
+        this.account = account;
         this.asset = asset;
         this.available = available;
         this.reserved = reserved;

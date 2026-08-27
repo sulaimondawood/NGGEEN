@@ -83,15 +83,15 @@ public class DataInitializer implements CommandLineRunner {
         // 3. Create Multi-Asset Balances
         List<AccountBalance> balances = List.of(
                 // Trader 1 Balances
-                new AccountBalance(acc1.getId(), "USDT", new BigDecimal("50000.000000000000000000"), BigDecimal.ZERO),
-                new AccountBalance(acc1.getId(), "BTC", new BigDecimal("2.500000000000000000"), BigDecimal.ZERO),
-                new AccountBalance(acc1.getId(), "ETH", new BigDecimal("15.000000000000000000"), BigDecimal.ZERO),
-                new AccountBalance(acc1.getId(), "NGN", new BigDecimal("25000000.000000000000000000"), BigDecimal.ZERO),
+                new AccountBalance(acc1, "USDT", new BigDecimal("50000.000000000000000000"), BigDecimal.ZERO),
+                new AccountBalance(acc1, "BTC", new BigDecimal("2.500000000000000000"), BigDecimal.ZERO),
+                new AccountBalance(acc1, "ETH", new BigDecimal("15.000000000000000000"), BigDecimal.ZERO),
+                new AccountBalance(acc1, "NGN", new BigDecimal("25000000.000000000000000000"), BigDecimal.ZERO),
 
                 // Market Maker Balances (High Liquidity)
-                new AccountBalance(acc2.getId(), "USDT", new BigDecimal("1000000.000000000000000000"), BigDecimal.ZERO),
-                new AccountBalance(acc2.getId(), "BTC", new BigDecimal("50.000000000000000000"), BigDecimal.ZERO),
-                new AccountBalance(acc2.getId(), "ETH", new BigDecimal("200.000000000000000000"), BigDecimal.ZERO)
+                new AccountBalance(acc2, "USDT", new BigDecimal("1000000.000000000000000000"), BigDecimal.ZERO),
+                new AccountBalance(acc2, "BTC", new BigDecimal("50.000000000000000000"), BigDecimal.ZERO),
+                new AccountBalance(acc2, "ETH", new BigDecimal("200.000000000000000000"), BigDecimal.ZERO)
         );
 
         accountBalanceRepository.saveAll(balances);

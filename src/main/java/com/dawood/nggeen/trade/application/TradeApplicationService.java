@@ -65,7 +65,7 @@ public class TradeApplicationService {
                         ErrorCode.NOT_FOUND,
                         "User not found",
                         HttpStatus.NOT_FOUND));
-        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(currentUser.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
+        Account currentUserAccount = accountRepository.findByUserIdAndAccountTypeAndStatus(currentUser.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.NOT_FOUND,
                         "Account not found",
@@ -75,7 +75,7 @@ public class TradeApplicationService {
         Instrument instrument = orderBookRegistry.getInstrumentBySymbol(orderRequest.getSymbol());
 
         Order incomingOrder = OrderMapper.toDomainOrder(orderRequest, UuidCreator.getTimeOrderedEpoch());
-        incomingOrder.setAccountId(account.getId());
+        incomingOrder.setAccountId(currentUserAccount.getId());
         incomingOrder.setUserId(currentUser.getId());
         incomingOrder.setBaseAsset(instrument.getBaseAsset());
         incomingOrder.setQuoteAsset(instrument.getQuoteAsset());
@@ -86,6 +86,7 @@ public class TradeApplicationService {
         String tokenToLock = isBuy ? instrument.getQuoteAsset() : instrument.getBaseAsset();
 
         BigDecimal amountToLock = calculateAmountToLock(isBuy, orderRequest, instrumentOrderBook);
+
         incomingOrder.setLockedAmount(amountToLock);
 
         accountBalanceService.reserveFunds(currentUser.getId(), amountToLock, tokenToLock);

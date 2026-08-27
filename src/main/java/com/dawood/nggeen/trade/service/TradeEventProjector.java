@@ -69,7 +69,7 @@ public class TradeEventProjector {
                         tradeExecutedEvents.add(event);
                     }
                 } else if (Objects.equals(EventType.OrderCancelled.name(), eventType)) {
-                    OrderCancelled eventCancelled = dc.wire().read("event").typedMarshallable();
+                    OrderCancelled eventCancelled = eventValueIn.typedMarshallable();
                     if (eventCancelled != null) {
                         orderEventCancelledEvents.add(eventCancelled);
                     }

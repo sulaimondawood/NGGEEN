@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.openhft.chronicle.queue.ExcerptTailer;
 import net.openhft.chronicle.wire.DocumentContext;
+import net.openhft.chronicle.wire.ValueIn;
+import net.openhft.chronicle.wire.Wire;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -47,27 +49,31 @@ public class OrderEventProjector {
                     break;
                 }
 
-                String eventType = dc.wire().read("eventType").text();
+                Wire wire = dc.wire();
+                if (wire == null) {
+                    continue;
+                }
+
+                String eventType = wire.read("eventType").text();
+                ValueIn eventValueIn = wire.read("event");
+
                 if (Objects.equals(eventType, EventType.OrderAccepted.name())) {
-                    OrderAccepted event = dc.wire().read("event").typedMarshallable();
+                    OrderAccepted event = eventValueIn.typedMarshallable();
                     if (event != null) {
                         batchToSave.put(event.getOrderId(), OrderMapper.fromEvent(event));
                     }
                 } else if (EventType.TradeExecuted.name().equals(eventType)) {
-                    TradeExecuted tradedEvent = dc.wire().read("event").typedMarshallable();
+                    TradeExecuted tradedEvent = eventValueIn.typedMarshallable();
                     if (tradedEvent != null) {
                         applyTradeToOrder(batchToSave, tradedEvent.getBuyOrderId(), tradedEvent);
                         applyTradeToOrder(batchToSave, tradedEvent.getSellOrderId(), tradedEvent);
                     }
                 } else if (EventType.OrderCancelled.name().equals(eventType)) {
-                    OrderCancelled cancelled = dc.wire().read("event").typedMarshallable();
+                    OrderCancelled cancelled = eventValueIn.typedMarshallable();
                     if (cancelled != null) {
                         applyCancel(batchToSave, cancelled);
                     }
-                } else {
-                    dc.wire().read("event").typedMarshallable();
                 }
-
                 reads++;
             }
 
