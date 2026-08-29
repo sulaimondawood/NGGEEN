@@ -1,11 +1,11 @@
 package com.dawood.nggeen.trade.api.rest.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
 public record CancelOrderRequest(
-        @NotBlank(message = "Order id is missing") UUID orderId,
-        @NotBlank(message = "Instrument symbol is missing") String symbol
+        @NotNull(message = "Order id is missing") UUID orderId,
+        @NotNull(message = "Instrument symbol is missing") String symbol
 ) {
 }

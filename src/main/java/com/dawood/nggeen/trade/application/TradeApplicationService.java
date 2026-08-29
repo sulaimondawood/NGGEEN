@@ -85,7 +85,6 @@ public class TradeApplicationService {
         String tokenToLock = isBuy ? instrument.getQuoteAsset() : instrument.getBaseAsset();
 
         BigDecimal amountToLock = calculateAmountToLock(isBuy, orderRequest, instrumentOrderBook);
-
         incomingOrder.setLockedAmount(amountToLock);
 
         accountBalanceService.reserveFunds(currentUser.getId(), amountToLock, tokenToLock);
