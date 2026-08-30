@@ -1,15 +1,14 @@
 package com.dawood.nggeen.trade.application;
 
 import com.dawood.nggeen.account.application.AccountBalanceService;
-import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
-import com.dawood.nggeen.account.infrastructure.persistence.UserRepository;
+import com.dawood.nggeen.shared.infrastructure.persistence.AccountRepository;
+import com.dawood.nggeen.shared.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.User;
 import com.dawood.nggeen.account.model.enums.AccountStatus;
 import com.dawood.nggeen.account.model.enums.AccountType;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.InvalidOrderException;
-import com.dawood.nggeen.shared.exception.NggeenException;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
 import com.dawood.nggeen.trade.api.rest.dto.CancelOrderRequest;
 import com.dawood.nggeen.trade.api.rest.dto.OrderResponse;

@@ -1,4 +1,4 @@
-package com.dawood.nggeen.account.infrastructure.security.config;
+package com.dawood.nggeen.shared.infrastructure.security.config;
 
 import org.springframework.context.annotation.Configuration;
 

@@ -1,13 +1,13 @@
 package com.dawood.nggeen.account.application;
 
 import com.dawood.nggeen.account.api.rest.dto.CreateUserRequest;
-import com.dawood.nggeen.account.infrastructure.message.amqp.RabbitMQConfig;
-import com.dawood.nggeen.account.infrastructure.persistence.UserRepository;
-import com.dawood.nggeen.account.infrastructure.persistence.VerificationTokenRepository;
+import com.dawood.nggeen.shared.infrastructure.message.amqp.RabbitMQConfig;
+import com.dawood.nggeen.shared.infrastructure.persistence.UserRepository;
+import com.dawood.nggeen.shared.infrastructure.persistence.VerificationTokenRepository;
 import com.dawood.nggeen.account.model.EmailVerificationToken;
 import com.dawood.nggeen.account.model.User;
 import com.dawood.nggeen.account.model.enums.UserStatus;
-import com.dawood.nggeen.shared.TokenGeneratorUtils;
+import com.dawood.nggeen.shared.utils.TokenGeneratorUtils;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
@@ -52,9 +52,8 @@ public class UserApplicationService {
 
         User savedUser = userRepository.save(newUser);
 
-        TokenGeneratorUtils tokenGenerator = new TokenGeneratorUtils();
         EmailVerificationToken verificationToken = EmailVerificationToken.create(
-                tokenGenerator.generateRandomToken(),
+               TokenGeneratorUtils.generateRandomToken(),
                 Instant.now().plus(1, ChronoUnit.DAYS),
                 savedUser.getId()
         );

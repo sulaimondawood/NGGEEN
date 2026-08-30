@@ -61,7 +61,6 @@ public class AccountBalance extends MetaData {
 
         available = available.subtract(amount);
         reserved = reserved.add(amount);
-
     }
 
     public void releaseLockedFunds(BigDecimal amount) {
