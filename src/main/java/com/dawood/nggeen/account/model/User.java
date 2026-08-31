@@ -1,5 +1,6 @@
 package com.dawood.nggeen.account.model;
 
+import com.dawood.nggeen.account.model.enums.UserRole;
 import com.dawood.nggeen.account.model.enums.UserStatus;
 import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.*;
@@ -41,6 +42,9 @@ public class User extends MetaData {
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
     private UserStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 
     @OneToMany(mappedBy = "user")
     @Builder.Default
