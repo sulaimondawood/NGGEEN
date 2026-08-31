@@ -17,27 +17,33 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component
 public class JwtService {
 
     private static final String ISSUER = "nggeen";
-    private static final Duration DEFAULT_EXPIRY = Duration.ofDays(1);
+    private static final Duration DEFAULT_EXPIRY = Duration.ofMinutes(5);
 
     @Value("${nggeen.security.secret-key}")
     private String secretKey;
 
+    private JWTVerifier verifier;
     private Algorithm algorithm;
 
     @PostConstruct
     public void init() {
         algorithm = Algorithm.HMAC256(secretKey);
+        verifier = JWT.require(algorithm)
+                .withIssuer(ISSUER)
+                .build();
     }
 
     public String createToken(Map<String, String> claims, String subject) {
         try {
             var builder = JWT.create()
+                    .withJWTId(UUID.randomUUID().toString())
                     .withIssuer(ISSUER)
                     .withSubject(subject)
                     .withIssuedAt(Instant.now())
@@ -61,10 +67,6 @@ public class JwtService {
 
     public DecodedJWT verifyAndDecodeToken(String token) {
         try {
-            JWTVerifier verifier = JWT.require(algorithm)
-                    .withIssuer(ISSUER)
-                    .build();
-
             return verifier.verify(token);
 
         } catch (JWTVerificationException e) {
