@@ -33,7 +33,6 @@ public class OutboxEvent extends MetaData {
     @Column(nullable = false)
     private OutboxStatus status = OutboxStatus.PENDING;
 
-    @Column(nullable = false)
     private Instant processedAt;
 
     @Column(nullable = false)
@@ -42,7 +41,7 @@ public class OutboxEvent extends MetaData {
 
     @Column(nullable = false)
     @Builder.Default
-    private int retries = 0;
+    private int retryCount = 0;
 
     @Column(nullable = false)
     @Builder.Default
@@ -51,22 +50,38 @@ public class OutboxEvent extends MetaData {
     @Column(columnDefinition = "TEXT")
     private String lastError;
 
-    @Column(nullable = false, length = 128)
+    @Column(nullable = false)
     private String destinationExchange;
 
-    @Column(nullable = false, length = 128)
+    @Column(nullable = false)
     private String routingKey;
+
+    public static OutboxEvent of(OutboxEventType eventType,
+                                 String payload,
+                                 String destinationExchange,
+                                 String routingKey) {
+        return OutboxEvent.builder()
+                .eventType(eventType)
+                .payload(payload)
+                .status(OutboxStatus.PENDING)
+                .nextRetryAt(Instant.now())
+                .retryCount(0)
+                .maxRetries(5)
+                .destinationExchange(destinationExchange)
+                .routingKey(routingKey)
+                .build();
+    }
 
     public void markProcessed() {
         status = OutboxStatus.PROCESSED;
-       processedAt = Instant.now();
-       lastError = null;
+        processedAt = Instant.now();
+        lastError = null;
     }
 
     public void recordFailure(String error, int backoffSeconds) {
-        retries++;
+        retryCount++;
         lastError = error != null && error.length() > 1024 ? error.substring(0, 1024) : error;
-        if (retries >= maxRetries) {
+        if (retryCount >= maxRetries) {
             status = OutboxStatus.FAILED;
             processedAt = Instant.now();
         } else {

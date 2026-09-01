@@ -11,6 +11,10 @@ import com.dawood.nggeen.shared.infrastructure.message.amqp.RabbitMQConfig;
 import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.VerificationTokenRepository;
+import com.dawood.nggeen.shared.infrastructure.persistence.OutboxRepository;
+import com.dawood.nggeen.shared.model.OutboxEvent;
+import com.dawood.nggeen.shared.model.enums.OutboxEventType;
+import com.dawood.nggeen.shared.model.enums.OutboxStatus;
 import com.dawood.nggeen.shared.utils.TokenGeneratorUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -35,6 +40,8 @@ public class AuthApplicationService {
     private final VerificationTokenRepository verificationTokenRepository;
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public void createUser(CreateUserRequest request) {
@@ -64,16 +71,26 @@ public class AuthApplicationService {
         );
         verificationTokenRepository.save(verificationToken);
 
+        String payload = objectMapper.writeValueAsString(Map.of(
+                "email", email,
+                "token", rawToken
+        ));
+        String exchange = RabbitMQConfig.NGGEEN_EXCHANGE;
+        String routingKey = RabbitMQConfig.EMAIL_VERIFICATION;
+
+        OutboxEvent outboxEvent = OutboxEvent.of(OutboxEventType.EMAIL_VERIFICATION, payload, exchange, routingKey);
+        outboxRepository.save(outboxEvent);
+
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
                 try {
-                rabbitTemplate.convertAndSend(
-                        RabbitMQConfig.NGGEEN_EXCHANGE,
-                        RabbitMQConfig.EMAIL_VERIFICATION,
-                        Map.of("email", email,
-                                "token", rawToken)
-                );
+                    rabbitTemplate.convertAndSend(
+                            exchange,
+                            routingKey,
+                            Map.of("email", email,
+                                    "token", rawToken)
+                    );
                 } catch (Exception e) {
                     log.error("CRITICAL_ALERT: Failed to enqueue verification email for user={}. Broker unavailable.", email, e);
                 }
