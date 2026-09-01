@@ -70,12 +70,16 @@ public class AuthApplicationService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
+                try {
                 rabbitTemplate.convertAndSend(
                         RabbitMQConfig.NGGEEN_EXCHANGE,
                         RabbitMQConfig.EMAIL_VERIFICATION,
                         Map.of("email", email,
                                 "token", rawToken)
                 );
+                } catch (Exception e) {
+                    log.error("CRITICAL_ALERT: Failed to enqueue verification email for user={}. Broker unavailable.", email, e);
+                }
             }
         });
 
