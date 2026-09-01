@@ -13,7 +13,7 @@ public class CreateUserRequest {
     private String email;
 
     @NotBlank(message = "Username is required")
-    private String username;
+    private String fullname;
 
     @NotBlank(message = "Password is required")
     private String password;
