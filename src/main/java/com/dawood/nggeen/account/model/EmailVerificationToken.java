@@ -26,7 +26,7 @@ public class EmailVerificationToken {
     private UUID userId;
 
     @Column(nullable = false, unique = true)
-    private String tokenHash;
+    private String token;
 
     @Column(nullable = false, unique = true)
     private Instant expiresAt;
@@ -36,7 +36,7 @@ public class EmailVerificationToken {
     public static EmailVerificationToken create(String token, Instant expiresAt, UUID userId) {
         return EmailVerificationToken
                 .builder()
-                .tokenHash(token)
+                .token(token)
                 .expiresAt(expiresAt)
                 .userId(userId)
                 .build();

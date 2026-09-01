@@ -28,7 +28,7 @@ public class AccountBalance extends MetaData {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", insertable = false, updatable = false)
+    @JoinColumn(name = "account_id")
     private Account account;
 
     @Column(nullable = false)
@@ -61,7 +61,6 @@ public class AccountBalance extends MetaData {
 
         available = available.subtract(amount);
         reserved = reserved.add(amount);
-
     }
 
     public void releaseLockedFunds(BigDecimal amount) {

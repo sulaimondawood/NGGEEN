@@ -1,16 +1,15 @@
 package com.dawood.nggeen.trade.application;
 
 import com.dawood.nggeen.account.application.AccountBalanceService;
-import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
-import com.dawood.nggeen.account.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.User;
 import com.dawood.nggeen.account.model.enums.AccountStatus;
 import com.dawood.nggeen.account.model.enums.AccountType;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.InvalidOrderException;
-import com.dawood.nggeen.shared.exception.NggeenException;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
+import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
+import com.dawood.nggeen.shared.infrastructure.security.service.AuthenticationContext;
 import com.dawood.nggeen.trade.api.rest.dto.CancelOrderRequest;
 import com.dawood.nggeen.trade.api.rest.dto.OrderResponse;
 import com.dawood.nggeen.trade.api.rest.dto.PlaceOrderRequest;
@@ -44,9 +43,10 @@ public class TradeApplicationService {
     private final ChronicleQueueService chronicleQueueService;
     private final FileSnapShotStore fileSnapShotStore;
     private final InstrumentValidator instrumentValidator;
-    private final UserRepository userRepository;
     private final AccountBalanceService accountBalanceService;
     private final AccountRepository accountRepository;
+    private final AuthenticationContext authenticationContext;
+
 
     private static final long SNAPSHOT_INTERVAL = 50_000L;
 
@@ -58,12 +58,8 @@ public class TradeApplicationService {
                     HttpStatus.BAD_REQUEST);
         }
 
-        User currentUser = userRepository.findByEmailIgnoreCase("marketmaker@nggeen.com")
-//        User currentUser = userRepository.findByEmailIgnoreCase("trader1@nggeen.com")
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.NOT_FOUND,
-                        "User not found",
-                        HttpStatus.NOT_FOUND));
+        User currentUser = getUser();
+
         Account currentUserAccount = accountRepository.findByUserIdAndAccountTypeAndStatus(currentUser.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.NOT_FOUND,
@@ -85,7 +81,6 @@ public class TradeApplicationService {
         String tokenToLock = isBuy ? instrument.getQuoteAsset() : instrument.getBaseAsset();
 
         BigDecimal amountToLock = calculateAmountToLock(isBuy, orderRequest, instrumentOrderBook);
-
         incomingOrder.setLockedAmount(amountToLock);
 
         accountBalanceService.reserveFunds(currentUser.getId(), amountToLock, tokenToLock);
@@ -103,12 +98,7 @@ public class TradeApplicationService {
     }
 
     public void cancelRestingOrder(CancelOrderRequest request) {
-        User currentUser = userRepository.findByEmailIgnoreCase("marketmaker@nggeen.com")
-//        User currentUser = userRepository.findByEmailIgnoreCase("trader1@nggeen.com")
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.NOT_FOUND,
-                        "User not found",
-                        HttpStatus.NOT_FOUND));
+        User currentUser = getUser();
 
         Account currentUserAccount = accountRepository.findByUserIdAndAccountTypeAndStatus(currentUser.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -174,6 +164,22 @@ public class TradeApplicationService {
                 .flatMap(orderBook -> orderBook.getActiveOrders().stream())
                 .map(OrderMapper::toDTO)
                 .toList();
+    }
+
+    private User getUser() {
+        User currentUser = authenticationContext.getAuthenticatedUser();
+//        User currentUser = userRepository.findByEmailIgnoreCase("marketmaker@nggeen.com")
+//        User currentUser = userRepository.findByEmailIgnoreCase("trader1@nggeen.com")
+
+        if (!currentUser.canTrade()) {
+            throw new InvalidOrderException(
+                    ErrorCode.FORBIDDEN,
+                    "Account is suspended or restricted from trading",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        return currentUser;
     }
 
     private void processOrderSafely(

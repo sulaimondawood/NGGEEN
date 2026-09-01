@@ -55,7 +55,7 @@ public class OrderBookRegistry {
     public ExecutorService getExecutorFor(String symbol) {
         ExecutorService executor = executors.get(symbol);
         if (executor == null) {
-            throw new ResourceNotFoundException(ErrorCode.NOT_FOUND, "No thread executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
+            throw new ResourceNotFoundException(ErrorCode.NOT_FOUND, "No executor configured for instrument: " + symbol, HttpStatus.NOT_FOUND);
         }
         return executor;
     }

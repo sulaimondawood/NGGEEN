@@ -1,4 +1,4 @@
-package com.dawood.nggeen.account.infrastructure.message.mail;
+package com.dawood.nggeen.shared.infrastructure.message.mail;
 
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.InfrastructureException;

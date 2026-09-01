@@ -1,4 +1,4 @@
-package com.dawood.nggeen.account.infrastructure.message.amqp;
+package com.dawood.nggeen.shared.infrastructure.message.amqp;
 
 import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.Bean;

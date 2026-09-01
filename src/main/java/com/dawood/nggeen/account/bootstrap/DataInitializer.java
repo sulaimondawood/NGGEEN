@@ -2,7 +2,7 @@ package com.dawood.nggeen.account.bootstrap;
 
 import com.dawood.nggeen.account.infrastructure.persistence.AccountBalanceRepository;
 import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
-import com.dawood.nggeen.account.infrastructure.persistence.UserRepository;
+import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.AccountBalance;
 import com.dawood.nggeen.account.model.User;
