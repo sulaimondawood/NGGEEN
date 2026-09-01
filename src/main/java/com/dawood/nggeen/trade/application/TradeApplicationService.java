@@ -8,7 +8,7 @@ import com.dawood.nggeen.account.model.enums.AccountType;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.InvalidOrderException;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
-import com.dawood.nggeen.shared.infrastructure.persistence.AccountRepository;
+import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.shared.infrastructure.security.service.AuthenticationContext;
 import com.dawood.nggeen.trade.api.rest.dto.CancelOrderRequest;
 import com.dawood.nggeen.trade.api.rest.dto.OrderResponse;

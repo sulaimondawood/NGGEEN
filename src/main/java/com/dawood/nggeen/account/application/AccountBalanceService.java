@@ -1,7 +1,7 @@
 package com.dawood.nggeen.account.application;
 
-import com.dawood.nggeen.shared.infrastructure.persistence.AccountBalanceRepository;
-import com.dawood.nggeen.shared.infrastructure.persistence.AccountRepository;
+import com.dawood.nggeen.account.infrastructure.persistence.AccountBalanceRepository;
+import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.AccountBalance;
 import com.dawood.nggeen.account.model.enums.AccountStatus;

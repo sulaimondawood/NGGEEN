@@ -1,4 +1,4 @@
-package com.dawood.nggeen.shared.infrastructure.persistence;
+package com.dawood.nggeen.identity.infrastructure.persistence;
 
 import com.dawood.nggeen.account.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,7 +1,7 @@
 package com.dawood.nggeen.shared.infrastructure.security.service;
 
 import com.dawood.nggeen.account.model.User;
-import com.dawood.nggeen.shared.infrastructure.persistence.UserRepository;
+import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
