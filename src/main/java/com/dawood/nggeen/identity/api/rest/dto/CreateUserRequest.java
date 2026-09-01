@@ -1,4 +1,4 @@
-package com.dawood.nggeen.account.api.rest.dto;
+package com.dawood.nggeen.identity.api.rest.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

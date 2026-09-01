@@ -1,6 +1,6 @@
-package com.dawood.nggeen.account.application;
+package com.dawood.nggeen.identity.application;
 
-import com.dawood.nggeen.account.api.rest.dto.CreateUserRequest;
+import com.dawood.nggeen.identity.api.rest.dto.CreateUserRequest;
 import com.dawood.nggeen.shared.infrastructure.message.amqp.RabbitMQConfig;
 import com.dawood.nggeen.shared.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.shared.infrastructure.persistence.VerificationTokenRepository;
