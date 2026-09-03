@@ -5,16 +5,16 @@ import com.dawood.nggeen.account.model.EmailVerificationToken;
 import com.dawood.nggeen.account.model.User;
 import com.dawood.nggeen.account.model.enums.UserStatus;
 import com.dawood.nggeen.identity.api.rest.dto.CreateUserRequest;
+import com.dawood.nggeen.identity.event.UserRegisteredEvent;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.ConflictException;
 import com.dawood.nggeen.shared.infrastructure.message.amqp.RabbitMQConfig;
 import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.VerificationTokenRepository;
-import com.dawood.nggeen.shared.infrastructure.persistence.OutboxRepository;
-import com.dawood.nggeen.shared.model.OutboxEvent;
-import com.dawood.nggeen.shared.model.enums.OutboxEventType;
-import com.dawood.nggeen.shared.model.enums.OutboxStatus;
+import com.dawood.nggeen.shared.infrastructure.outbox.persistence.OutboxRepository;
+import com.dawood.nggeen.shared.infrastructure.outbox.model.OutboxEvent;
+import com.dawood.nggeen.shared.infrastructure.outbox.model.enums.OutboxEventType;
 import com.dawood.nggeen.shared.utils.TokenGeneratorUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,33 +71,17 @@ public class AuthApplicationService {
         );
         verificationTokenRepository.save(verificationToken);
 
-        String payload = objectMapper.writeValueAsString(Map.of(
-                "email", email,
-                "token", rawToken
-        ));
+        UserRegisteredEvent event = new UserRegisteredEvent();
+        event.setEmail(email);
+        event.setToken(rawToken);
+        event.setName(user.getFullname());
+
+        String payload = objectMapper.writeValueAsString(event);
         String exchange = RabbitMQConfig.NGGEEN_EXCHANGE;
         String routingKey = RabbitMQConfig.EMAIL_VERIFICATION;
 
         OutboxEvent outboxEvent = OutboxEvent.of(OutboxEventType.EMAIL_VERIFICATION, payload, exchange, routingKey);
         outboxRepository.save(outboxEvent);
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                try {
-                    rabbitTemplate.convertAndSend(
-                            exchange,
-                            routingKey,
-                            Map.of("email", email,
-                                    "token", rawToken)
-                    );
-                } catch (Exception e) {
-                    log.error("CRITICAL_ALERT: Failed to enqueue verification email for user={}. Broker unavailable.", email, e);
-                }
-            }
-        });
-
-
     }
 
 }

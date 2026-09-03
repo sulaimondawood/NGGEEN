@@ -4,16 +4,20 @@ server:
 spring:
   application:
     name: nggeen
+
   config:
     import: file:.env[.properties]
+
   datasource:
     username: postgres
     password: admin
     url: jdbc:postgresql://localhost:5432/nggeen-db
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
+
   mail:
     host: ${SMTP_HOST}
     username: ${SMTP_USERNAME}
@@ -26,12 +30,26 @@ spring:
           starttls:
             enable: true
             required: true
+
   data:
     redis:
       host: localhost
       port: 6379
       repositories:
         enabled: false
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: password
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-retries: 3
+          initial-interval: 2000ms # Wait 2 seconds before retry 1
+          multiplier: 2 #
 
 
 nggeen:
@@ -43,3 +61,9 @@ nggeen:
     secret-key: ${SECRET_KEY}
   message:
     mail-sub: ${EMAIL_SUB}
+  outbox:
+    poller:
+      fixed-delay: 2000
+      batch-size: 50
+  client:
+    url: http://localhost:3000/

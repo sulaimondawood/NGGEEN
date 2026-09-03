@@ -1,7 +1,8 @@
-package com.dawood.nggeen.shared.model;
+package com.dawood.nggeen.shared.infrastructure.outbox.model;
 
-import com.dawood.nggeen.shared.model.enums.OutboxEventType;
-import com.dawood.nggeen.shared.model.enums.OutboxStatus;
+import com.dawood.nggeen.shared.infrastructure.outbox.model.enums.OutboxEventType;
+import com.dawood.nggeen.shared.infrastructure.outbox.model.enums.OutboxStatus;
+import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -14,7 +15,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Table(name = "outbox_events")
+@Table(name = "outbox_events",
+        indexes = {
+                @Index(name = "idx_outbox_status_retry", columnList = "status, next_retry_at, created_at")
+        })
 @Entity
 public class OutboxEvent extends MetaData {
     @Id
@@ -78,7 +82,7 @@ public class OutboxEvent extends MetaData {
         lastError = null;
     }
 
-    public void recordFailure(String error, int backoffSeconds) {
+    public void markFailed(String error, long backoffSeconds) {
         retryCount++;
         lastError = error != null && error.length() > 1024 ? error.substring(0, 1024) : error;
         if (retryCount >= maxRetries) {

@@ -1,4 +1,4 @@
-package com.dawood.nggeen.shared.model.enums;
+package com.dawood.nggeen.shared.infrastructure.outbox.model.enums;
 
 public enum OutboxStatus {
     PENDING,
