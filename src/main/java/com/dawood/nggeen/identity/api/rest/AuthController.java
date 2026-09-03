@@ -8,10 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -23,8 +20,12 @@ public class AuthController {
     public ResponseEntity<ApiResponse<CreateUserResponse>> register(@Valid @RequestBody CreateUserRequest request){
       CreateUserResponse response = applicationService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response,
-                "Account created successfully. Please check your email to verify your address."));
-
+                "Account created successfully. Please check your email to verify your address (be sure to check your spam/junk folder)."));
     }
 
+    @GetMapping("/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam("token") String token){
+        applicationService.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.successMessage("Email verified successfully. You can now log in."));
+    }
 }

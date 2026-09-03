@@ -10,8 +10,11 @@ import com.dawood.nggeen.identity.api.rest.dto.CreateUserResponse;
 import com.dawood.nggeen.identity.event.UserRegisteredEvent;
 import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.VerificationTokenRepository;
+import com.dawood.nggeen.identity.infrastructure.persistence.projection.TokenWithUserView;
 import com.dawood.nggeen.shared.dto.ErrorCode;
+import com.dawood.nggeen.shared.exception.BadRequestException;
 import com.dawood.nggeen.shared.exception.ConflictException;
+import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
 import com.dawood.nggeen.shared.infrastructure.message.amqp.RabbitMQConfig;
 import com.dawood.nggeen.shared.infrastructure.outbox.model.OutboxEvent;
 import com.dawood.nggeen.shared.infrastructure.outbox.model.enums.OutboxEventType;
@@ -63,7 +66,7 @@ public class AuthApplicationService {
         EmailVerificationToken verificationToken = EmailVerificationToken.create(
                 rawToken,
                 Instant.now().plus(1, ChronoUnit.DAYS),
-                user.getId()
+                user
         );
         verificationTokenRepository.save(verificationToken);
 
@@ -79,7 +82,40 @@ public class AuthApplicationService {
         OutboxEvent outboxEvent = OutboxEvent.of(OutboxEventType.EMAIL_VERIFICATION, payload, exchange, routingKey);
         outboxRepository.save(outboxEvent);
 
-        return new CreateUserResponse(user.getEmail(),user.getStatus());
+        return new CreateUserResponse(user.getEmail(), user.getStatus());
     }
 
+    @Transactional
+    public void verifyEmail(String token) {
+        if (token == null || token.isBlank()) {
+            throw new BadRequestException(ErrorCode.BAD_REQUEST,
+                    "Invalid or null token ID",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        EmailVerificationToken existingToken = verificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Token invalid or expired",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        if (existingToken.getUsedAt() != null) {
+            throw new ConflictException(ErrorCode.BAD_REQUEST, "Token has already been used",HttpStatus.BAD_REQUEST);
+        }
+        if (existingToken.getRevokedAt() != null) {
+            throw new BadRequestException(ErrorCode.BAD_REQUEST, "A newer verification link was already requested", HttpStatus.BAD_REQUEST);
+        }
+        if (Instant.now().isAfter(existingToken.getExpiresAt())) {
+            throw new BadRequestException(ErrorCode.BAD_REQUEST, "Verification token has expired", HttpStatus.BAD_REQUEST);
+        }
+
+        User user = existingToken.getUser();
+        user.setStatus(UserStatus.ACTIVE);
+
+        existingToken.setUsedAt(Instant.now());
+
+        userRepository.save(user);
+        verificationTokenRepository.save(existingToken);
+    }
 }

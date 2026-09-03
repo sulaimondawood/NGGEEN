@@ -4,10 +4,7 @@ import com.dawood.nggeen.account.model.enums.UserRole;
 import com.dawood.nggeen.account.model.enums.UserStatus;
 import com.dawood.nggeen.shared.model.MetaData;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.ArrayList;
@@ -23,6 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Setter
 @Builder
 public class User extends MetaData {
 
@@ -44,6 +42,7 @@ public class User extends MetaData {
     private UserStatus status;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserRole role;
 
     @OneToMany(mappedBy = "user")
@@ -56,6 +55,7 @@ public class User extends MetaData {
         user.fullname = fullname;
         user.passwordHash = passwordHash;
         user.status = status;
+        user.role= UserRole.USER;
         return user;
     }
 

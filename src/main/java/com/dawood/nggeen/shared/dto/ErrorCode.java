@@ -1,6 +1,8 @@
 package com.dawood.nggeen.shared.dto;
 
 public enum ErrorCode {
+    TOKEN_EXPIRED("TOKEN_EXPIRED"),
+
     EMAIL_EXISTS("EMAIL_EXISTS"),
     FORBIDDEN("FORBIDDEN"),
 
