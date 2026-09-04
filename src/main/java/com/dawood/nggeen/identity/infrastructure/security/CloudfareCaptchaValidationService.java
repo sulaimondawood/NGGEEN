@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -29,7 +28,7 @@ public class CloudfareCaptchaValidationService implements CaptchaValidation {
     private final String TURNSTILE_VERIFY_URL = " https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
     @Override
-    public CaptchaResponse validateCaptcha(String token, String clientIp) {
+    public void validateCaptcha(String token, String clientIp) {
         Map<String, String> params = new HashMap<>();
         params.put("secret", CLOUDFARE_TURNSTILE_SECRET);
         params.put("response", token);
@@ -55,7 +54,6 @@ public class CloudfareCaptchaValidationService implements CaptchaValidation {
                         HttpStatus.BAD_REQUEST);
             }
 
-            return response;
         } catch (Exception e) {
             throw new BadRequestException(
                     ErrorCode.BAD_REQUEST,
