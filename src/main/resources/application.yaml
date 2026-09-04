@@ -51,7 +51,6 @@ spring:
           initial-interval: 2000ms # Wait 2 seconds before retry 1
           multiplier: 2 #
 
-
 nggeen:
   journal:
     path: ./data/chronicle/journal
@@ -59,6 +58,9 @@ nggeen:
     path: ./data/snapshots
   security:
     secret-key: ${SECRET_KEY}
+    cloud-fare:
+      turnstile:
+        secret-key: ${CLOUDFARE_TURNSTILE_SECRET_KEY}
   message:
     mail-sub: ${EMAIL_SUB}
   outbox:

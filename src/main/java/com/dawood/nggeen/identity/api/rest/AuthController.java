@@ -4,6 +4,7 @@ import com.dawood.nggeen.identity.api.rest.dto.CreateUserRequest;
 import com.dawood.nggeen.identity.api.rest.dto.CreateUserResponse;
 import com.dawood.nggeen.identity.application.AuthApplicationService;
 import com.dawood.nggeen.shared.dto.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,8 +18,11 @@ public class AuthController {
     private final AuthApplicationService applicationService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<CreateUserResponse>> register(@Valid @RequestBody CreateUserRequest request){
-      CreateUserResponse response = applicationService.createUser(request);
+    public ResponseEntity<ApiResponse<CreateUserResponse>> register(
+            @Valid @RequestBody CreateUserRequest payload,
+            HttpServletRequest request
+            ){
+      CreateUserResponse response = applicationService.createUser(payload,request.getRemoteAddr());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response,
                 "Account created successfully. Please check your email to verify your address (be sure to check your spam/junk folder)."));
     }
@@ -28,4 +32,5 @@ public class AuthController {
         applicationService.verifyEmail(token);
         return ResponseEntity.ok(ApiResponse.successMessage("Email verified successfully. You can now log in."));
     }
+
 }

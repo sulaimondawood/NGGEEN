@@ -7,10 +7,11 @@ import com.dawood.nggeen.account.model.User;
 import com.dawood.nggeen.account.model.enums.UserStatus;
 import com.dawood.nggeen.identity.api.rest.dto.CreateUserRequest;
 import com.dawood.nggeen.identity.api.rest.dto.CreateUserResponse;
+import com.dawood.nggeen.identity.api.rest.dto.LoginRequest;
 import com.dawood.nggeen.identity.event.UserRegisteredEvent;
 import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.VerificationTokenRepository;
-import com.dawood.nggeen.identity.infrastructure.persistence.projection.TokenWithUserView;
+import com.dawood.nggeen.identity.infrastructure.security.CloudfareCaptchaValidationService;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.BadRequestException;
 import com.dawood.nggeen.shared.exception.ConflictException;
@@ -20,6 +21,7 @@ import com.dawood.nggeen.shared.infrastructure.outbox.model.OutboxEvent;
 import com.dawood.nggeen.shared.infrastructure.outbox.model.enums.OutboxEventType;
 import com.dawood.nggeen.shared.infrastructure.outbox.persistence.OutboxRepository;
 import com.dawood.nggeen.shared.utils.TokenGeneratorUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -41,9 +43,12 @@ public class AuthApplicationService {
     private final PasswordEncoder passwordEncoder;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final CloudfareCaptchaValidationService cloudfareCaptchaValidationService;
 
     @Transactional
-    public CreateUserResponse createUser(CreateUserRequest request) {
+    public CreateUserResponse createUser(CreateUserRequest request, String clientIp) {
+        cloudfareCaptchaValidationService.validateCaptcha(request.getCaptchaToken(), clientIp);
+
         String email = request.getEmail().trim().toLowerCase();
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException(
@@ -73,7 +78,7 @@ public class AuthApplicationService {
         UserRegisteredEvent event = new UserRegisteredEvent();
         event.setEmail(email);
         event.setToken(rawToken);
-        event.setName(user.getFullname());
+        event.setName(user.getFullName());
 
         String payload = objectMapper.writeValueAsString(event);
         String exchange = RabbitMQConfig.NGGEEN_EXCHANGE;
@@ -117,5 +122,12 @@ public class AuthApplicationService {
 
         userRepository.save(user);
         verificationTokenRepository.save(existingToken);
+    }
+
+    @Transactional
+    public void login(LoginRequest payload, String clientIp){
+        cloudfareCaptchaValidationService.validateCaptcha(payload.captchaToken(), clientIp);
+
+
     }
 }
