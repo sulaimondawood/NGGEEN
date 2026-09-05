@@ -28,12 +28,19 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             @Param("now") Instant now
     );
 
+    @Modifying
     @Query("""
                 UPDATE Session s
                 SET s.status = 'REVOKED',
                     s.revokedAt = :now
-                WHERE s.family_id= :familyId AND s.status <> 'REVOKED'
+                WHERE s.familyId= :familyId AND s.status <> 'REVOKED'
             """)
     void revokeFamily(@Param("familyId") UUID familyId, @Param("now") Instant now);
 
+//    @Query("""
+//    DELETE Session s
+//    WHERE (s.status='REVOKED' OR s.status= 'USED' OR expires_at < :cutoff)
+//    AND s.updatedAt < :cutoff
+//""")
+//    void deleteStaleFamilySessions(@Param("cutoff") Instant cutoff);
 }

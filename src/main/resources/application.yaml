@@ -62,8 +62,8 @@ nggeen:
       secure: false
     cloud-fare:
       turnstile:
-#        secret-key: 1x0000000000000000000000000000000AA
-        secret-key: 2x0000000000000000000000000000000AA
+        secret-key: 1x0000000000000000000000000000000AA
+#        secret-key: 2x0000000000000000000000000000000AA
 #        secret-key: ${CLOUDFARE_TURNSTILE_SECRET_KEY}
   message:
     mail-sub: ${EMAIL_SUB}

@@ -39,7 +39,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -167,7 +166,7 @@ public class AuthApplicationService {
 
         String accessToken = createToken(existingUser);
 
-        Duration refreshDuration = payload.rememberMe() ? Duration.ofDays(30) : Duration.ofDays(1);
+        Duration refreshDuration = payload.rememberMe() != null ? Duration.ofDays(30) : Duration.ofDays(1);
         Instant refreshExpiresAt = Instant.now().plus(refreshDuration);
 
         String refreshToken = tokenService.createAndSaveRefreshToken(existingUser, clientIp, userAgent, refreshExpiresAt);
