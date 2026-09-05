@@ -39,7 +39,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -167,7 +166,7 @@ public class AuthApplicationService {
 
         String accessToken = createToken(existingUser);
 
-        Duration refreshDuration = payload.rememberMe() ? Duration.ofDays(30) : Duration.ofDays(1);
+        Duration refreshDuration = payload.rememberMe() != null ? Duration.ofDays(30) : Duration.ofDays(1);
         Instant refreshExpiresAt = Instant.now().plus(refreshDuration);
 
         String refreshToken = tokenService.createAndSaveRefreshToken(existingUser, clientIp, userAgent, refreshExpiresAt);
@@ -189,68 +188,62 @@ public class AuthApplicationService {
         }
 
         String hashedToken = HashUtils.hashToken(rawRefreshToken);
-        Optional<Session> currentMatch = sessionRepository.findByRefreshTokenHash(hashedToken);
+        Session session = sessionRepository.findByRefreshTokenHash(hashedToken)
+                .orElseThrow(() -> new AuthenticationException(
+                        ErrorCode.UNAUTHORIZED, "Invalid refresh token.", HttpStatus.UNAUTHORIZED));
 
-        if (currentMatch.isPresent()) {
-            Session session = currentMatch.get();
-            if (!session.isActive()) {
-                throw new BadRequestException(
-                        ErrorCode.UNAUTHORIZED,
-                        "Refresh token has expired. Please log in again.",
-                        HttpStatus.UNAUTHORIZED
-                );
-            }
+        if (session.getStatus() == Session.Status.REVOKED || session.getStatus() == Session.Status.USED) {
+            log.error("SECURITY ALERT: refresh token reuse userId={}, familyId={}",
+                    session.getUserId(), session.getFamilyId());
 
-            User user = userRepository.findById(session.getUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            ErrorCode.BAD_REQUEST,
-                            "User account not found",
-                            HttpStatus.NOT_FOUND
-                    ));
-
-            String newRefreshToken = tokenService.rotateSessionToken(session, clientIp, userAgent);
-
-            Duration remainingDuration = Duration.between(Instant.now(), session.getExpiresAt());
-            if (remainingDuration.isNegative()) {
-                remainingDuration = Duration.ZERO;
-            }
-
-            ResponseCookie cookie = tokenService.generateRefreshTokenCookie(newRefreshToken, remainingDuration);
-            String accessToken = createToken(user);
-
-            return new RefreshResult(cookie, accessToken);
-
-        }
-
-        Optional<Session> previousMatch = sessionRepository.findByPreviousRefreshTokenHash(hashedToken);
-        if (previousMatch.isPresent()) {
-            Session session = previousMatch.get();
-
-            if (session.isRevoked()) {
-                throw new AuthenticationException(
-                        ErrorCode.UNAUTHORIZED,
-                        "Session is invalid. Please log in again.",
-                        HttpStatus.UNAUTHORIZED
-                );
-            }
-            log.error("SECURITY ALERT: Refresh token reuse detected for user {}!", session.getUserId());
-
-            sessionSecurityService.executeBreachKillSwitch(
-                    session.getUserId(),
-                    Session.RevokeReason.REUSE_DETECTED
-            );
-
+            sessionSecurityService.executeRevokeFamilyKillSwitch(session.getFamilyId());
             throw new AuthenticationException(
                     ErrorCode.UNAUTHORIZED,
-                    "Suspicious activity detected. All sessions terminated.",
+                    "Suspicious activity detected. Session family terminated.",
                     HttpStatus.UNAUTHORIZED
             );
         }
 
-        throw new AuthenticationException(
-                ErrorCode.UNAUTHORIZED,
-                "Invalid refresh token.",
-                HttpStatus.UNAUTHORIZED);
+        if (!session.isActive()) {
+            throw new AuthenticationException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Refresh token expired. Please log in again.",
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+
+        User user = userRepository.findById(session.getUserId())
+                .orElseThrow(() -> new AuthenticationException(
+                        ErrorCode.UNAUTHORIZED, "Invalid session.", HttpStatus.UNAUTHORIZED));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new AuthenticationException(
+                    ErrorCode.UNAUTHORIZED, "User account is not active.", HttpStatus.UNAUTHORIZED);
+        }
+
+        session.setStatus(Session.Status.USED);
+        sessionRepository.save(session);
+
+        String newRefreshToken = TokenGeneratorUtils.generateRandomToken();
+        Session next = Session.builder()
+                .userId(session.getUserId())
+                .familyId(session.getFamilyId())
+                .refreshTokenHash(HashUtils.hashToken(newRefreshToken))
+                .expiresAt(session.getExpiresAt())
+                .ip(clientIp != null ? clientIp : "unknown")
+                .userAgent(userAgent)
+                .status(Session.Status.ACTIVE)
+                .build();
+
+        sessionRepository.save(next);
+
+        Duration ttl = Duration.between(Instant.now(), session.getExpiresAt());
+        if (ttl.isNegative()) ttl = Duration.ZERO;
+
+        ResponseCookie cookie = tokenService.generateRefreshTokenCookie(newRefreshToken, ttl);
+        String accessToken = createToken(user);
+
+        return new RefreshResult(cookie, accessToken);
 
     }
 

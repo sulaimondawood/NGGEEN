@@ -6,6 +6,6 @@ public record LoginRequest(
        @NotBlank(message = "Email address is required") String email,
        @NotBlank(message = "Password is required") String password,
        @NotBlank(message = "Captcha token is required") String captchaToken,
-       boolean rememberMe
+       Boolean rememberMe
 ) {
 }

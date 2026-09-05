@@ -16,7 +16,17 @@ public class SessionSecurityService {
     private final SessionRepository sessionRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void executeBreachKillSwitch(UUID userId, Session.RevokeReason reason) {
-        sessionRepository.revokeAllActiveSessionsForUser(userId, Instant.now(), reason);
+    public void executeBreachKillSwitch(UUID userId) {
+        sessionRepository.revokeAllActiveSessionsForUser(userId, Instant.now());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void executeRevokeFamilyKillSwitch(UUID familyId) {
+        sessionRepository.revokeFamily(familyId, Instant.now());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void save(Session session) {
+        sessionRepository.save(session);
     }
 }

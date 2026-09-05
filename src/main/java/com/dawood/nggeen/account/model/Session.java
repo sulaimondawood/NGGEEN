@@ -12,7 +12,8 @@ import java.util.UUID;
         indexes = {
                 @Index(name = "idx_session_user_id", columnList = "user_id"),
                 @Index(name = "idx_sessions_token_hash", columnList = "refresh_token_hash", unique = true),
-                @Index(name = "idx_sessions_prev_token_hash", columnList = "previous_refresh_token_hash")
+                @Index(name = "idx_sessions_family_id_status", columnList = "family_id, status"),
+                @Index(name = "idx_sessions_user_id_status", columnList = "user_id, status")
         }
 )
 @Entity
@@ -30,10 +31,21 @@ public class Session extends MetaData {
     @Column(nullable = false)
     private UUID userId;
 
+    @Column(nullable = false)
+    private UUID familyId;
+
     @Column(nullable = false, unique = true)
     private String refreshTokenHash;
 
-    private String previousRefreshTokenHash;
+    @Column(nullable = false)
+    private Instant expiresAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Status status = Status.ACTIVE;
+
+    private Instant revokedAt;
 
     @Column(nullable = false)
     private String ip;
@@ -41,30 +53,14 @@ public class Session extends MetaData {
     @Column(columnDefinition = "TEXT")
     private String userAgent;
 
-    private RevokeReason revokeReason;
-
-    @Column(nullable = false)
-    private Instant expiresAt;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean revoked = false;
-
-    private Instant revokedAt;
-
-    public static enum RevokeReason {
-        USER_LOGOUT,
-        REUSE_DETECTED,
-        EXPIRED,
-        PASSWORD_RESET
-    }
-
-    public boolean isExpired() {
-        return Instant.now().isAfter(expiresAt);
+    public  enum Status {
+        ACTIVE,
+        USED,
+        REVOKED
     }
 
     public boolean isActive() {
-        return !revoked && !isExpired();
+        return status == Status.ACTIVE && Instant.now().isBefore(expiresAt);
     }
 
 }
