@@ -12,6 +12,7 @@ import com.dawood.nggeen.identity.infrastructure.persistence.SessionRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.VerificationTokenRepository;
 import com.dawood.nggeen.identity.infrastructure.security.CloudfareCaptchaValidationService;
+import com.dawood.nggeen.identity.service.SessionSecurityService;
 import com.dawood.nggeen.identity.service.TokenService;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.AuthenticationException;
@@ -54,6 +55,7 @@ public class AuthApplicationService {
     private final JwtService jwtService;
     private final SessionRepository sessionRepository;
     private final TokenService tokenService;
+    private final SessionSecurityService sessionSecurityService;
 
     @Transactional
     public CreateUserResponse createUser(CreateUserRequest request, String clientIp) {
@@ -233,9 +235,8 @@ public class AuthApplicationService {
             }
             log.error("SECURITY ALERT: Refresh token reuse detected for user {}!", session.getUserId());
 
-            sessionRepository.revokeAllActiveSessionsForUser(
+            sessionSecurityService.executeBreachKillSwitch(
                     session.getUserId(),
-                    Instant.now(),
                     Session.RevokeReason.REUSE_DETECTED
             );
 
