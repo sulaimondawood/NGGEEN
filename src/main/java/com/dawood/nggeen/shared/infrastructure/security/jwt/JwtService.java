@@ -40,7 +40,7 @@ public class JwtService {
                 .build();
     }
 
-    public String createToken(Map<String, String> claims, String subject) {
+    public String createToken(Map<String, Object> claims, String subject) {
         try {
             var builder = JWT.create()
                     .withJWTId(UUID.randomUUID().toString())
@@ -50,7 +50,15 @@ public class JwtService {
                     .withExpiresAt(Instant.now().plus(DEFAULT_EXPIRY));
 
             if (claims != null && !claims.isEmpty()) {
-                claims.forEach(builder::withClaim);
+                claims.forEach((key, value) -> {
+                    switch (value) {
+                        case Boolean b -> builder.withClaim(key, b);
+                        case Integer i -> builder.withClaim(key, i);
+                        case Long l -> builder.withClaim(key, l);
+                        case Double d -> builder.withClaim(key, d);
+                        case null, default -> builder.withClaim(key, value.toString());
+                    }
+                });
             }
 
             return builder.sign(algorithm);

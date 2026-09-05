@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class EmailConfig {
+public class EmailService {
     private final JavaMailSender mailSender;
 
     @Value("${nggeen.message.mail-sub}")
