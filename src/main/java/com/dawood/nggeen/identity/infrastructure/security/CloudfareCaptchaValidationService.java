@@ -1,7 +1,6 @@
 package com.dawood.nggeen.identity.infrastructure.security;
 
 import com.dawood.nggeen.identity.infrastructure.security.contract.CaptchaValidation;
-import com.dawood.nggeen.identity.infrastructure.security.dto.CaptchaResponse;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,12 +20,12 @@ import java.util.Map;
 @Slf4j
 public class CloudfareCaptchaValidationService implements CaptchaValidation {
 
-    private final RestClient restClient;
+    private final RestClient restClient = RestClient.builder().build();
 
     @Value("${nggeen.security.cloud-fare.turnstile.secret-key}")
     private String CLOUDFARE_TURNSTILE_SECRET;
 
-    private final String TURNSTILE_VERIFY_URL = " https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    private final String TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
     @Override
     public void validateCaptcha(String token, String clientIp) {
@@ -45,22 +45,30 @@ public class CloudfareCaptchaValidationService implements CaptchaValidation {
                     .retrieve()
                     .body(CaptchaResponse.class);
 
-            if(response == null || !response.success() ){
+            if (response == null || !response.success()) {
                 log.warn("CAPTCHA validation failed. Error codes: {}",
                         response != null ? response.errorCodes() : "null response");
                 throw new BadRequestException(
                         ErrorCode.BAD_REQUEST,
-                        "Bot verification failed. Please try again.",
+                        "Captcha verification failed. Please try again.",
                         HttpStatus.BAD_REQUEST);
             }
 
-        } catch (Exception e) {
+        } catch (RestClientException e) {
+            log.error("Error communicating with Cloudflare Turnstile API", e);
             throw new BadRequestException(
                     ErrorCode.BAD_REQUEST,
-                    "Bot verification failed. Please try again.",
+                    "Unable to complete bot verification. Please try again later.",
                     HttpStatus.BAD_REQUEST);
         }
 
     }
 
+    public record CaptchaResponse(
+            boolean success,
+            String[] errorCodes,
+            String challenge_ts,
+            String hostname
+    ) {
+    }
 }

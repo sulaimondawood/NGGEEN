@@ -23,7 +23,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest req) {
         int status = HttpStatus.BAD_REQUEST.value();
-
         Map<String, String> errors = new HashMap<>();
         ex.getFieldErrors().forEach((e) -> {
             errors.put(e.getField(), e.getDefaultMessage());
@@ -40,31 +39,33 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NggeenException.class)
-    public ResponseEntity<ApiError> handleBusinessException(NggeenException ex, HttpServletRequest req) {
+    public ResponseEntity<ApiError> handleBusinessException(NggeenException ex, HttpServletRequest request) {
+        log.warn("[{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         ApiError error = ApiError.of(
                 ex.getStatus().value(),
                 ex.getCode(),
                 ex.getMessage(),
-                req.getRequestURI()
+                request.getRequestURI()
         );
         return ResponseEntity.status(ex.getStatus().value()).body(error);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ApiError> handleBusinessException(NoResourceFoundException ex, HttpServletRequest req) {
+    public ResponseEntity<ApiError> handleBusinessException(NoResourceFoundException ex, HttpServletRequest request) {
+        log.warn("Resource not found on [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         int status = HttpStatus.NOT_FOUND.value();
         ApiError error = ApiError.of(
                 status,
                 ErrorCode.RESOURCE_NOT_FOUND,
                 ex.getMessage(),
-                req.getRequestURI()
+                request.getRequestURI()
         );
         return ResponseEntity.status(status).body(error);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
-        log.error("Unexpected error", ex);
+        log.error("Unhandled system error on [{} {}]", request.getMethod(), request.getRequestURI(), ex);
         ApiError error = ApiError.of(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 ErrorCode.INTERNAL_SERVER_ERROR,

@@ -58,9 +58,13 @@ nggeen:
     path: ./data/snapshots
   security:
     secret-key: ${SECRET_KEY}
+    cookie:
+      secure: false
     cloud-fare:
       turnstile:
-        secret-key: ${CLOUDFARE_TURNSTILE_SECRET_KEY}
+#        secret-key: 1x0000000000000000000000000000000AA
+        secret-key: 2x0000000000000000000000000000000AA
+#        secret-key: ${CLOUDFARE_TURNSTILE_SECRET_KEY}
   message:
     mail-sub: ${EMAIL_SUB}
   outbox:

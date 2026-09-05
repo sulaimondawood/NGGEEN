@@ -62,4 +62,5 @@ public class User extends MetaData {
     public boolean canTrade() {
         return this.status == UserStatus.ACTIVE;
     }
+
 }
