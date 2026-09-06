@@ -17,7 +17,7 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> success(T data){
-        return new ApiResponse<>(data, "Operation Successful", null);
+        return new ApiResponse<>(data, "Request Successful", null);
     }
 
     public static <T> ApiResponse<T> successMessage(String message){

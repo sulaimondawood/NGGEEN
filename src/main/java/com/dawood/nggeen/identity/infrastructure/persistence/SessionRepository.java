@@ -33,9 +33,14 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
                 UPDATE Session s
                 SET s.status = 'REVOKED',
                     s.revokedAt = :now
-                WHERE s.familyId= :familyId AND s.status <> 'REVOKED'
+                WHERE s.familyId= :familyId
+                    AND s.id <> :sessionId
+                    AND s.status <> 'REVOKED'
             """)
-    void revokeFamily(@Param("familyId") UUID familyId, @Param("now") Instant now);
+    void revokeFamily(@Param("familyId") UUID familyId,
+                      @Param("now") Instant now,
+                      @Param("sessionId") UUID sessionId
+                      );
 
 //    @Query("""
 //    DELETE Session s

@@ -68,6 +68,15 @@ public class AuthController {
                 .body(ApiResponse.success(response.accessToken(), "Your request was successful"));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
+
+        ResponseCookie response = applicationService.logout(refreshToken);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, response.toString())
+                .body(ApiResponse.successMessage("Logged out successfully"));
+    }
 
     private String extractClientIp(HttpServletRequest request) {
         String cfIp = request.getHeader("CF-Connecting-IP");

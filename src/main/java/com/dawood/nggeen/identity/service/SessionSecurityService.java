@@ -21,8 +21,8 @@ public class SessionSecurityService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void executeRevokeFamilyKillSwitch(UUID familyId) {
-        sessionRepository.revokeFamily(familyId, Instant.now());
+    public void executeRevokeFamilyKillSwitch(UUID familyId, UUID sessionId) {
+        sessionRepository.revokeFamily(familyId, Instant.now(), sessionId);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
