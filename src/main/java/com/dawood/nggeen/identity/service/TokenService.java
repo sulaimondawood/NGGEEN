@@ -52,4 +52,14 @@ public class TokenService {
                 .build();
     }
 
+    public ResponseCookie clearRefreshCookie() {
+        return ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .sameSite("Strict")
+                .secure(secureCookie)
+                .path("/api/v1/auth")
+                .maxAge(Duration.ZERO)
+                .build();
+    }
+
 }

@@ -196,7 +196,7 @@ public class AuthApplicationService {
             log.error("SECURITY ALERT: refresh token reuse userId={}, familyId={}",
                     session.getUserId(), session.getFamilyId());
 
-            sessionSecurityService.executeRevokeFamilyKillSwitch(session.getFamilyId());
+            sessionSecurityService.executeRevokeFamilyKillSwitch(session.getFamilyId(), session.getId());
             throw new AuthenticationException(
                     ErrorCode.UNAUTHORIZED,
                     "Suspicious activity detected. Session family terminated.",
@@ -245,6 +245,19 @@ public class AuthApplicationService {
 
         return new RefreshResult(cookie, accessToken);
 
+    }
+
+    @Transactional
+    public ResponseCookie logout(String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            String hashedToken = HashUtils.hashToken(refreshToken);
+            sessionRepository.findByRefreshTokenHash(hashedToken)
+                    .ifPresent((session) -> {
+                        sessionRepository.revokeFamily(session.getFamilyId(), Instant.now(), session.getId());
+                    });
+        }
+
+        return tokenService.clearRefreshCookie();
     }
 
     private String createToken(User existingUser) {
