@@ -199,7 +199,7 @@ public class AuthApplicationService {
             sessionSecurityService.executeRevokeFamilyKillSwitch(session.getFamilyId(), session.getId());
             throw new AuthenticationException(
                     ErrorCode.UNAUTHORIZED,
-                    "Suspicious activity detected. Session family terminated.",
+                    "Suspicious activity detected. Session terminated.",
                     HttpStatus.UNAUTHORIZED
             );
         }
