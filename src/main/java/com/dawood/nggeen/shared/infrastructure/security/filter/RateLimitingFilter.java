@@ -55,7 +55,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.getWriter().write(objectMapper.writeValueAsString(error));
+            return;
         }
+
+        filterChain.doFilter(request,response);
     }
 
     private String clientIp(HttpServletRequest request) {
