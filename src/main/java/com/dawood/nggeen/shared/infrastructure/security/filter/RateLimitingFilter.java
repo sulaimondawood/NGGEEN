@@ -8,16 +8,20 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.Duration;
 
+@Component
 @RequiredArgsConstructor
+@Slf4j
 public class RateLimitingFilter extends OncePerRequestFilter {
     private final RateLimitService rateLimitService;
     private final ObjectMapper objectMapper;
@@ -46,6 +50,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
 
         if(!rateLimitService.tryConsume(key,capacity,window)){
+            log.warn("Rate limit exceeded ip={} path={}", ip, path);
             ApiError error = ApiError.of(
                     HttpStatus.TOO_MANY_REQUESTS.value(),
                     ErrorCode.TOO_MANY_REQUESTS,
