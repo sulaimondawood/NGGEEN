@@ -48,6 +48,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             DecodedJWT claims = jwtService.verifyAndDecodeToken(token);
+            String tokenUse = claims.getClaim("token_use").asString();
+            if(!tokenUse.equals("access")){
+                throw new AuthenticationException(
+                        ErrorCode.UNAUTHORIZED,
+                        "Invalid access token",
+                        HttpStatus.UNAUTHORIZED
+                );
+            }
             String subject = claims.getSubject();
 
             UserDetails userDetails = customUserDetails.loadUserByUsername(subject);

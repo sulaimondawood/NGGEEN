@@ -14,6 +14,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -48,7 +50,7 @@ public class AuthController {
 
         LoginResult result = applicationService.login(payload, clientIp, userAgent);
 
-        if(result.requires2fa()){
+        if(result.loginResponse().requires2fa()){
             return ResponseEntity.ok()
                     .body(ApiResponse.success(result.loginResponse(),"Two-factor authentication required"));
         }
@@ -93,8 +95,8 @@ public class AuthController {
     }
 
     @PostMapping("/2fa/confirm")
-    public ResponseEntity<ApiResponse<Void>> confirmTOTPSetup(String code) {
-        applicationService.confirmTotpSetup(code);
+    public ResponseEntity<ApiResponse<Void>> confirmTOTPSetup(@RequestBody Map<String, String> payload) {
+        applicationService.confirmTotpSetup(payload.get("code"));
         return ResponseEntity.ok()
                 .body(ApiResponse.successMessage("2FA enabled successfully"));
     }

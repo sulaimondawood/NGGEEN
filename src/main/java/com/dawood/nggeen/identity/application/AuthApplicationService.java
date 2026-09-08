@@ -176,9 +176,9 @@ public class AuthApplicationService {
             );
             String token = jwtService.createToken(claims, existingUser.getEmail());
             return new LoginResult(
-                    new LoginResponse(token, null),
+                    new LoginResponse(token, null, true),
                     null,
-                    null, true);
+                    null);
         }
 
 
@@ -194,9 +194,9 @@ public class AuthApplicationService {
                 new UserDTO(existingUser.getId(),
                         existingUser.getEmail(),
                         existingUser.getFullName(),
-                        existingUser.getRole()));
+                        existingUser.getRole() ), false);
 
-        return new LoginResult(loginResponse, refreshToken, refreshDuration, false);
+        return new LoginResult(loginResponse, refreshToken, refreshDuration);
     }
 
     @Transactional
@@ -321,9 +321,9 @@ public class AuthApplicationService {
                 new UserDTO(user.getId(),
                         user.getEmail(),
                         user.getFullName(),
-                        user.getRole()));
+                        user.getRole()), false);
 
-        return new LoginResult(loginResponse, refreshToken, refreshDuration, false);
+        return new LoginResult(loginResponse, refreshToken, refreshDuration);
     }
 
     @Transactional
@@ -377,7 +377,8 @@ public class AuthApplicationService {
     private String createToken(User existingUser) {
         Map<String, Object> claims = Map.of(
                 "userId", existingUser.getId().toString(),
-                "role", existingUser.getRole().name()
+                "role", existingUser.getRole().name(),
+                "token_use","access"
         );
 
         return jwtService.createToken(claims, existingUser.getEmail());
