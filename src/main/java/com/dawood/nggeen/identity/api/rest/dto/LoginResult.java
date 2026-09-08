@@ -5,7 +5,8 @@ import java.time.Duration;
 public record LoginResult(
         LoginResponse loginResponse,
         String refreshToken,
-        Duration refreshDuration
+        Duration refreshDuration,
+        boolean requires2fa
 ) {
 
 }

@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -44,6 +45,14 @@ public class User extends MetaData {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean totpEnabled = false;
+
+    private String totpSecret;
+
+    private Instant totpEnabledAt;
 
     @OneToMany(mappedBy = "user")
     @Builder.Default

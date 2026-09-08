@@ -4,6 +4,7 @@ import com.dawood.nggeen.identity.api.rest.dto.*;
 import com.dawood.nggeen.identity.application.AuthApplicationService;
 import com.dawood.nggeen.identity.service.TokenService;
 import com.dawood.nggeen.shared.dto.ApiResponse;
+import dev.samstevens.totp.exceptions.QrGenerationException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,12 +48,17 @@ public class AuthController {
 
         LoginResult result = applicationService.login(payload, clientIp, userAgent);
 
+        if(result.requires2fa()){
+            return ResponseEntity.ok()
+                    .body(ApiResponse.success(result.loginResponse(),"Two-factor authentication required"));
+        }
+
         ResponseCookie cookie = tokenService.generateRefreshTokenCookie(result.refreshToken(), result.refreshDuration());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(ApiResponse.success(result.loginResponse(),
-                        "Your request was successful"));
+                        "Login successful"));
     }
 
     @PostMapping("/refresh")
@@ -65,7 +71,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, response.cookie().toString())
-                .body(ApiResponse.success(response.accessToken(), "Your request was successful"));
+                .body(ApiResponse.success(response.accessToken(), "Token refreshed"));
     }
 
     @PostMapping("/logout")
@@ -77,6 +83,36 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, response.toString())
                 .body(ApiResponse.successMessage("Logged out successfully"));
     }
+
+    @PostMapping("/2fa/setup")
+    public ResponseEntity<ApiResponse<TotpSetupResponse>> setupTOTP() throws QrGenerationException {
+
+        TotpSetupResponse response = applicationService.setupTotp();
+        return ResponseEntity.ok()
+                .body(ApiResponse.success(response, "2FA setup initialized"));
+    }
+
+    @PostMapping("/2fa/confirm")
+    public ResponseEntity<ApiResponse<Void>> confirmTOTPSetup(String code) {
+        applicationService.confirmTotpSetup(code);
+        return ResponseEntity.ok()
+                .body(ApiResponse.successMessage("2FA enabled successfully"));
+    }
+
+    @PostMapping("/verify-2fa")
+    public ResponseEntity<ApiResponse<LoginResponse>> verify2fa(@Valid @RequestBody TOTPVerifyRequest payload, HttpServletRequest request) {
+        String ip = extractClientIp(request);
+        String ua = request.getHeader(HttpHeaders.USER_AGENT);
+
+        LoginResult result = applicationService.verify2fa(payload, ip, ua);
+
+        ResponseCookie cookie = tokenService.generateRefreshTokenCookie(result.refreshToken(), result.refreshDuration());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.success(result.loginResponse(), "Login successful"));
+    }
+
 
     private String extractClientIp(HttpServletRequest request) {
         String cfIp = request.getHeader("CF-Connecting-IP");
