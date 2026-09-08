@@ -89,14 +89,14 @@ public class AuthController {
     @PostMapping("/2fa/setup")
     public ResponseEntity<ApiResponse<TotpSetupResponse>> setupTOTP() throws QrGenerationException {
 
-        TotpSetupResponse response = applicationService.setupTotp();
+        TotpSetupResponse response = applicationService.setup2FA();
         return ResponseEntity.ok()
                 .body(ApiResponse.success(response, "2FA setup initialized"));
     }
 
     @PostMapping("/2fa/confirm")
     public ResponseEntity<ApiResponse<Void>> confirmTOTPSetup(@RequestBody Map<String, String> payload) {
-        applicationService.confirmTotpSetup(payload.get("code"));
+        applicationService.confirm2FASetup(payload.get("code"));
         return ResponseEntity.ok()
                 .body(ApiResponse.successMessage("2FA enabled successfully"));
     }

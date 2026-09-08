@@ -327,7 +327,7 @@ public class AuthApplicationService {
     }
 
     @Transactional
-    public TotpSetupResponse setupTotp() throws QrGenerationException {
+    public TotpSetupResponse setup2FA() throws QrGenerationException {
         User user = authenticationContext.getAuthenticatedUser();
         if (user.isTotpEnabled()) {
             throw new ConflictException(ErrorCode.CONFLICT, "2FA already enabled", HttpStatus.CONFLICT);
@@ -344,7 +344,7 @@ public class AuthApplicationService {
 
     }
 
-    public void confirmTotpSetup(String code) {
+    public void confirm2FASetup(String code) {
         if (code == null || code.isBlank()) {
             throw new AuthenticationException(
                     ErrorCode.UNAUTHORIZED,
@@ -372,6 +372,10 @@ public class AuthApplicationService {
         user.setTotpEnabled(true);
         user.setTotpEnabledAt(Instant.now());
         userRepository.save(user);
+    }
+
+    public void disable2FA(){
+
     }
 
     private String createToken(User existingUser) {
