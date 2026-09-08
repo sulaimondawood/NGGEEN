@@ -345,14 +345,28 @@ public class AuthApplicationService {
     }
 
     public void confirmTotpSetup(String code) {
+        if (code == null || code.isBlank()) {
+            throw new AuthenticationException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Authenticator code is required",
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+
         User user = authenticationContext.getAuthenticatedUser();
         String secret = user.getTotpSecret();
         if (secret == null) {
-            throw new BadRequestException(ErrorCode.BAD_REQUEST, "2FA setup not started", HttpStatus.BAD_REQUEST);
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "2FA setup not started",
+                    HttpStatus.BAD_REQUEST);
         }
 
         if (!totpService.verify(secret, code)) {
-            throw new AuthenticationException(ErrorCode.UNAUTHORIZED, "Invalid authenticator code", HttpStatus.UNAUTHORIZED);
+            throw new AuthenticationException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Invalid authenticator code",
+                    HttpStatus.UNAUTHORIZED);
         }
 
         user.setTotpEnabled(true);
