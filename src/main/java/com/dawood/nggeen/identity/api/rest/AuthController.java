@@ -97,8 +97,9 @@ public class AuthController {
     @PostMapping("/2fa/disable")
     public ResponseEntity<ApiResponse<Void>> setupTOTP(@Valid @RequestBody Disable2faRequest request)  {
 
-         applicationService.disable2FA(request);
+       ResponseCookie response =  applicationService.disable2FA(request);
         return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE,response.toString() )
                 .body(ApiResponse.successMessage( "2FA disabled successfully"));
     }
 

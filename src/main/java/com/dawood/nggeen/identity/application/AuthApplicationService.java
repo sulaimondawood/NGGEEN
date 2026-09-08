@@ -375,10 +375,10 @@ public class AuthApplicationService {
     }
 
     @Transactional
-    public void disable2FA(Disable2faRequest request) {
+    public ResponseCookie disable2FA(Disable2faRequest request) {
         User user = authenticationContext.getAuthenticatedUser();
         if (!user.isTotpEnabled()) {
-            throw new ConflictException(ErrorCode.CONFLICT, "2FA already enabled", HttpStatus.CONFLICT);
+            throw new ConflictException(ErrorCode.CONFLICT, "2FA is not enabled on this account", HttpStatus.CONFLICT);
         }
 
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
@@ -401,6 +401,7 @@ public class AuthApplicationService {
         userRepository.save(user);
         sessionRepository.revokeAllActiveSessionsForUser(user.getId(), Instant.now());
 
+       return tokenService.clearRefreshCookie();
     }
 
     private String createToken(User existingUser) {
