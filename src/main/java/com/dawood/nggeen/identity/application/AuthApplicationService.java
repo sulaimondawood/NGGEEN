@@ -13,6 +13,7 @@ import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.identity.infrastructure.persistence.VerificationTokenRepository;
 import com.dawood.nggeen.identity.infrastructure.security.CloudfareCaptchaValidationService;
 import com.dawood.nggeen.identity.service.SessionSecurityService;
+import com.dawood.nggeen.identity.service.TOTPService;
 import com.dawood.nggeen.identity.service.TokenService;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.AuthenticationException;
@@ -24,8 +25,10 @@ import com.dawood.nggeen.shared.infrastructure.outbox.model.OutboxEvent;
 import com.dawood.nggeen.shared.infrastructure.outbox.model.enums.OutboxEventType;
 import com.dawood.nggeen.shared.infrastructure.outbox.persistence.OutboxRepository;
 import com.dawood.nggeen.shared.infrastructure.security.jwt.JwtService;
+import com.dawood.nggeen.shared.infrastructure.security.service.AuthenticationContext;
 import com.dawood.nggeen.shared.utils.HashUtils;
 import com.dawood.nggeen.shared.utils.TokenGeneratorUtils;
+import dev.samstevens.totp.exceptions.QrGenerationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -55,6 +58,8 @@ public class AuthApplicationService {
     private final SessionRepository sessionRepository;
     private final TokenService tokenService;
     private final SessionSecurityService sessionSecurityService;
+    private final AuthenticationContext authenticationContext;
+    private final TOTPService totpService;
 
     @Transactional
     public CreateUserResponse createUser(CreateUserRequest request, String clientIp) {
@@ -163,6 +168,10 @@ public class AuthApplicationService {
             );
         }
 
+        if(existingUser.isTotpEnabled()){
+
+        }
+
 
         String accessToken = createToken(existingUser);
 
@@ -258,6 +267,40 @@ public class AuthApplicationService {
         }
 
         return tokenService.clearRefreshCookie();
+    }
+
+    @Transactional
+    public TotpSetupResponse setupTotp() throws QrGenerationException {
+        User user = authenticationContext.getAuthenticatedUser();
+        if (user.isTotpEnabled()) {
+            throw new ConflictException(ErrorCode.CONFLICT, "2FA already enabled", HttpStatus.CONFLICT);
+        }
+
+        String secret = totpService.generateSecret();
+        String qrCodeURI = totpService.generateQrCode(user.getEmail(), secret);
+
+        user.setTotpEnabled(false);
+        user.setTotpSecret(secret);
+        userRepository.save(user);
+
+        return new TotpSetupResponse(secret, qrCodeURI);
+
+    }
+
+    public void confirmTotpSetup(String code) {
+        User user = authenticationContext.getAuthenticatedUser();
+        String secret = user.getTotpSecret();
+        if (secret == null) {
+            throw new BadRequestException(ErrorCode.BAD_REQUEST, "2FA setup not started", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!totpService.verify(secret, code)) {
+            throw new AuthenticationException(ErrorCode.UNAUTHORIZED, "Invalid authenticator code", HttpStatus.UNAUTHORIZED);
+        }
+
+        user.setTotpEnabled(true);
+        user.setTotpEnabledAt(Instant.now());
+        userRepository.save(user);
     }
 
     private String createToken(User existingUser) {
