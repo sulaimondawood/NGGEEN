@@ -28,8 +28,6 @@ public class SecurityConfig {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cor -> cor.configurationSource(configurationSource()))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/2fa/setup").authenticated()
-                        .requestMatchers("/auth/2fa/confirm").authenticated()
                         .requestMatchers(
                                 "/auth/register",
                                 "/auth/login",

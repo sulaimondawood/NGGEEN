@@ -94,6 +94,14 @@ public class AuthController {
                 .body(ApiResponse.success(response, "2FA setup initialized"));
     }
 
+    @PostMapping("/2fa/disable")
+    public ResponseEntity<ApiResponse<Void>> setupTOTP(@Valid @RequestBody Disable2faRequest request)  {
+
+         applicationService.disable2FA(request);
+        return ResponseEntity.ok()
+                .body(ApiResponse.successMessage( "2FA disabled successfully"));
+    }
+
     @PostMapping("/2fa/confirm")
     public ResponseEntity<ApiResponse<Void>> confirmTOTPSetup(@RequestBody Map<String, String> payload) {
         applicationService.confirm2FASetup(payload.get("code"));

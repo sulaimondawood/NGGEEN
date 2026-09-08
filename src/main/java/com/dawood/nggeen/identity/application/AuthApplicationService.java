@@ -194,7 +194,7 @@ public class AuthApplicationService {
                 new UserDTO(existingUser.getId(),
                         existingUser.getEmail(),
                         existingUser.getFullName(),
-                        existingUser.getRole() ), false);
+                        existingUser.getRole()), false);
 
         return new LoginResult(loginResponse, refreshToken, refreshDuration);
     }
@@ -374,7 +374,32 @@ public class AuthApplicationService {
         userRepository.save(user);
     }
 
-    public void disable2FA(){
+    @Transactional
+    public void disable2FA(Disable2faRequest request) {
+        User user = authenticationContext.getAuthenticatedUser();
+        if (!user.isTotpEnabled()) {
+            throw new ConflictException(ErrorCode.CONFLICT, "2FA already enabled", HttpStatus.CONFLICT);
+        }
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Invalid password confirmation.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (!totpService.verify(user.getTotpSecret(), request.code())) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Invalid authenticator code",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        user.setTotpEnabled(false);
+        user.setTotpSecret(null);
+        userRepository.save(user);
+        sessionRepository.revokeAllActiveSessionsForUser(user.getId(), Instant.now());
 
     }
 
@@ -382,7 +407,7 @@ public class AuthApplicationService {
         Map<String, Object> claims = Map.of(
                 "userId", existingUser.getId().toString(),
                 "role", existingUser.getRole().name(),
-                "token_use","access"
+                "token_use", "access"
         );
 
         return jwtService.createToken(claims, existingUser.getEmail());
