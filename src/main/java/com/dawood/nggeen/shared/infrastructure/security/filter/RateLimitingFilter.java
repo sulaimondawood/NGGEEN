@@ -44,12 +44,15 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         } else if (path.contains("/refresh")) {
             capacity = 60;
             window = Duration.ofMinutes(1);
+        } else if (path.contains("/verify-2fa") || path.contains("/2fa/confirm")) {
+            capacity = 10;
+            window = Duration.ofMinutes(15);
         } else {
             capacity = 10;
             window = Duration.ofMinutes(15);
         }
 
-        if(!rateLimitService.tryConsume(key,capacity,window)){
+        if (!rateLimitService.tryConsume(key, capacity, window)) {
             log.warn("Rate limit exceeded ip={} path={}", ip, path);
             ApiError error = ApiError.of(
                     HttpStatus.TOO_MANY_REQUESTS.value(),
@@ -63,7 +66,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             return;
         }
 
-        filterChain.doFilter(request,response);
+        filterChain.doFilter(request, response);
     }
 
     private String clientIp(HttpServletRequest request) {
