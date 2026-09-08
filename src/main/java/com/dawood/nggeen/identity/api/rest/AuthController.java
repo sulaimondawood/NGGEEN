@@ -48,12 +48,17 @@ public class AuthController {
 
         LoginResult result = applicationService.login(payload, clientIp, userAgent);
 
+        if(result.requires2fa()){
+            return ResponseEntity.ok()
+                    .body(ApiResponse.success(result.loginResponse(),"Two-factor authentication required"));
+        }
+
         ResponseCookie cookie = tokenService.generateRefreshTokenCookie(result.refreshToken(), result.refreshDuration());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(ApiResponse.success(result.loginResponse(),
-                        "Your request was successful"));
+                        "Login successful"));
     }
 
     @PostMapping("/refresh")
@@ -66,7 +71,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, response.cookie().toString())
-                .body(ApiResponse.success(response.accessToken(), "Your request was successful"));
+                .body(ApiResponse.success(response.accessToken(), "Token refreshed"));
     }
 
     @PostMapping("/logout")
@@ -84,14 +89,14 @@ public class AuthController {
 
         TotpSetupResponse response = applicationService.setupTotp();
         return ResponseEntity.ok()
-                .body(ApiResponse.success(response, "2fa setup was successfully"));
+                .body(ApiResponse.success(response, "2FA setup initialized"));
     }
 
     @PostMapping("/2fa/confirm")
-    public ResponseEntity<ApiResponse<TotpSetupResponse>> confirmTOTPSetup(String code) {
+    public ResponseEntity<ApiResponse<Void>> confirmTOTPSetup(String code) {
         applicationService.confirmTotpSetup(code);
         return ResponseEntity.ok()
-                .body(ApiResponse.successMessage("2fa enabled successfully"));
+                .body(ApiResponse.successMessage("2FA enabled successfully"));
     }
 
     @PostMapping("/verify-2fa")
@@ -105,7 +110,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(ApiResponse.success(result.loginResponse(), "2fa verified successfully"));
+                .body(ApiResponse.success(result.loginResponse(), "Login successful"));
     }
 
 

@@ -6,7 +6,7 @@ public record LoginResult(
         LoginResponse loginResponse,
         String refreshToken,
         Duration refreshDuration,
-        boolean totpEnabled
+        boolean requires2fa
 ) {
 
 }
