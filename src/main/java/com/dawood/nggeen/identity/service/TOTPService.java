@@ -22,7 +22,6 @@ public class TOTPService {
     private final CodeGenerator codeGenerator = new DefaultCodeGenerator();
     private final CodeVerifier verifier = new DefaultCodeVerifier(codeGenerator, timeProvider);
 
-
     @Value("${spring.application.name}")
     private String appName;
 
