@@ -1,5 +1,6 @@
 package com.dawood.nggeen.identity.application;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.EmailVerificationToken;
@@ -42,6 +43,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -154,9 +156,9 @@ public class AuthApplicationService {
 
         if (!passwordEncoder.matches(payload.password(), existingUser.getPasswordHash())) {
             throw new BadRequestException(
-                    ErrorCode.BAD_REQUEST,
+                    ErrorCode.UNAUTHORIZED,
                     "Invalid email or password",
-                    HttpStatus.BAD_REQUEST
+                    HttpStatus.UNAUTHORIZED
             );
         }
 
@@ -168,8 +170,15 @@ public class AuthApplicationService {
             );
         }
 
-        if(existingUser.isTotpEnabled()){
-
+        if (existingUser.isTotpEnabled()) {
+            Map<String, Object> claims = Map.of(
+                    "token_use", "pre_2fa"
+            );
+            String token = jwtService.createToken(claims, existingUser.getEmail());
+            return new LoginResult(
+                    new LoginResponse(token, null),
+                    null,
+                    null, true);
         }
 
 
@@ -187,7 +196,7 @@ public class AuthApplicationService {
                         existingUser.getFullName(),
                         existingUser.getRole()));
 
-        return new LoginResult(loginResponse, refreshToken, refreshDuration);
+        return new LoginResult(loginResponse, refreshToken, refreshDuration, false);
     }
 
     @Transactional
@@ -267,6 +276,54 @@ public class AuthApplicationService {
         }
 
         return tokenService.clearRefreshCookie();
+    }
+
+    public LoginResult verify2fa(TOTPVerifyRequest payload, String clientIp, String userAgent) {
+        DecodedJWT claims = jwtService.verifyAndDecodeToken(payload.preAuthToken());
+        String email = claims.getSubject();
+        if (!Objects.equals(claims.getClaim("token_use").asString(), "pre_2fa")) {
+            throw new AuthenticationException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Invalid 2fa access token",
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new AuthenticationException(
+                        ErrorCode.UNAUTHORIZED,
+                        "Invalid 2FA request",
+                        HttpStatus.UNAUTHORIZED
+                ));
+
+        if (!user.isTotpEnabled() || user.getTotpSecret() == null) {
+            throw new AuthenticationException(
+                    ErrorCode.UNAUTHORIZED,
+                    "2FA not enabled",
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+        if (!totpService.verify(user.getTotpSecret(), payload.code())) {
+            throw new AuthenticationException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Invalid authenticator code",
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+        String accessToken = createToken(user);
+
+        Duration refreshDuration = payload.rememberMe() != null ? Duration.ofDays(30) : Duration.ofDays(1);
+        Instant refreshExpiresAt = Instant.now().plus(refreshDuration);
+
+        String refreshToken = tokenService.createAndSaveRefreshToken(user, clientIp, userAgent, refreshExpiresAt);
+
+        LoginResponse loginResponse = new LoginResponse(
+                accessToken,
+                new UserDTO(user.getId(),
+                        user.getEmail(),
+                        user.getFullName(),
+                        user.getRole()));
+
+        return new LoginResult(loginResponse, refreshToken, refreshDuration, false);
     }
 
     @Transactional
