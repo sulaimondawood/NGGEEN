@@ -28,7 +28,16 @@ public class SecurityConfig {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cor -> cor.configurationSource(configurationSource()))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/2fa/setup").authenticated()
+                        .requestMatchers("/auth/2fa/confirm").authenticated()
+                        .requestMatchers(
+                                "/auth/register",
+                                "/auth/login",
+                                "/auth/verify",
+                                "/auth/refresh",
+                                "/auth/logout",
+                                "/auth/verify-2fa"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
