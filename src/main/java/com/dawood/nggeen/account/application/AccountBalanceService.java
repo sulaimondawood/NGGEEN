@@ -6,11 +6,13 @@ import com.dawood.nggeen.account.infrastructure.persistence.AccountBalanceReposi
 import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.account.model.Account;
 import com.dawood.nggeen.account.model.AccountBalance;
+import com.dawood.nggeen.account.model.User;
 import com.dawood.nggeen.account.model.enums.AccountStatus;
 import com.dawood.nggeen.account.model.enums.AccountType;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.BadRequestException;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
+import com.dawood.nggeen.shared.infrastructure.security.service.AuthenticationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,7 @@ import java.util.UUID;
 public class AccountBalanceService {
     private final AccountBalanceRepository accountBalanceRepository;
     private final AccountRepository accountRepository;
+    private final AuthenticationContext authenticationContext;
 
     private static final Set<String> SUPPORTED_ASSETS = Set.of("USDT", "BTC");
 
@@ -81,14 +84,15 @@ public class AccountBalanceService {
     }
 
     @Transactional
-    public BalanceResponse demoDeposit(UUID userId, DemoDepositRequest request) {
+    public BalanceResponse demoDeposit( DemoDepositRequest request) {
         String asset = request.asset().trim().toUpperCase();
         BigDecimal amount = request.amount();
 
         validateAsset(asset);
         validateAmount(asset, amount);
 
-        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(userId, AccountType.SPOT, AccountStatus.ACTIVE)
+        User user = authenticationContext.getAuthenticatedUser();
+        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(user.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.NOT_FOUND,
                         "Spot account not found",
@@ -129,8 +133,9 @@ public class AccountBalanceService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<BalanceResponse> getBalances(UUID userId) {
-        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(userId, AccountType.SPOT, AccountStatus.ACTIVE)
+    public java.util.List<BalanceResponse> getBalances() {
+        User user = authenticationContext.getAuthenticatedUser();
+        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(user.getId(), AccountType.SPOT, AccountStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.NOT_FOUND,
                         "Spot account not found",
