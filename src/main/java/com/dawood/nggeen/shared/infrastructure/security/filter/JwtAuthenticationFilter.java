@@ -20,10 +20,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -32,6 +34,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
     private final CustomUserDetailsImpl customUserDetails;
+
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
+    public static final List<String> PUBLIC_ENDPOINTS = List.of(
+            "/auth/register",
+            "/auth/login",
+            "/auth/verify",
+            "/auth/refresh",
+            "/auth/logout",
+            "/auth/verify-2fa"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return PUBLIC_ENDPOINTS.stream()
+                .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -49,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             DecodedJWT claims = jwtService.verifyAndDecodeToken(token);
             String tokenUse = claims.getClaim("token_use").asString();
-            if(!tokenUse.equals("access")){
+            if (!tokenUse.equals("access")) {
                 throw new AuthenticationException(
                         ErrorCode.UNAUTHORIZED,
                         "Invalid access token",
