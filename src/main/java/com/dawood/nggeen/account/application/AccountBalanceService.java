@@ -1,5 +1,7 @@
 package com.dawood.nggeen.account.application;
 
+import com.dawood.nggeen.account.api.rest.dto.BalanceResponse;
+import com.dawood.nggeen.account.api.rest.dto.DemoDepositRequest;
 import com.dawood.nggeen.account.infrastructure.persistence.AccountBalanceRepository;
 import com.dawood.nggeen.account.infrastructure.persistence.AccountRepository;
 import com.dawood.nggeen.account.model.Account;
@@ -61,5 +63,31 @@ public class AccountBalanceService {
         accountBalanceRepository.save(balance);
 
         log.debug("Released {} {} for account {}", amountToReserve, asset, account.getId());
+    }
+
+    @Transactional
+    public BalanceResponse demoDeposit(UUID userId, DemoDepositRequest request) {
+        String asset = request.asset().trim().toUpperCase();
+        BigDecimal amount = request.amount();
+
+        validateAsset(asset);
+        validateAmount(asset, amount);
+
+        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(userId, AccountType.SPOT, AccountStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(...));
+
+        AccountBalance balance = accountBalanceRepository
+                .findByAccountIdAndAsset(account.getId(), asset)
+                .orElseGet(() -> AccountBalance.builder()
+                        .accountId(account.getId())
+                        .asset(asset)
+                        .available(BigDecimal.ZERO)
+                        .reserved(BigDecimal.ZERO)
+                        .build());
+
+        balance.credit(amount); // available += amount
+        accountBalanceRepository.save(balance);
+
+        return new BalanceResponse(asset, balance.getAvailable(), balance.getReserved());
     }
 }
