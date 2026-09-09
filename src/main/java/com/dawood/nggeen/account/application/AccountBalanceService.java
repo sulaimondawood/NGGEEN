@@ -9,6 +9,7 @@ import com.dawood.nggeen.account.model.AccountBalance;
 import com.dawood.nggeen.account.model.enums.AccountStatus;
 import com.dawood.nggeen.account.model.enums.AccountType;
 import com.dawood.nggeen.shared.dto.ErrorCode;
+import com.dawood.nggeen.shared.exception.BadRequestException;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,8 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -26,6 +29,18 @@ import java.util.UUID;
 public class AccountBalanceService {
     private final AccountBalanceRepository accountBalanceRepository;
     private final AccountRepository accountRepository;
+
+    private static final Set<String> SUPPORTED_ASSETS = Set.of("USDT", "BTC");
+
+    private static final Map<String, BigDecimal> MAX_PER_TX = Map.of(
+            "USDT", new BigDecimal("100000"),
+            "BTC", new BigDecimal("10")
+    );
+
+    private static final Map<String, BigDecimal> MAX_BALANCE = Map.of(
+            "USDT", new BigDecimal("1000000"),
+            "BTC", new BigDecimal("50")
+    );
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void reserveFunds(UUID userId, BigDecimal amountToReserve, String asset) {
@@ -74,20 +89,90 @@ public class AccountBalanceService {
         validateAmount(asset, amount);
 
         Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(userId, AccountType.SPOT, AccountStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException(...));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.NOT_FOUND,
+                        "Spot account not found",
+                        HttpStatus.NOT_FOUND
+                ));
 
         AccountBalance balance = accountBalanceRepository
                 .findByAccountIdAndAsset(account.getId(), asset)
                 .orElseGet(() -> AccountBalance.builder()
-                        .accountId(account.getId())
+                        .account(account)
                         .asset(asset)
                         .available(BigDecimal.ZERO)
                         .reserved(BigDecimal.ZERO)
                         .build());
 
-        balance.credit(amount); // available += amount
+        BigDecimal currentAvailable = balance.getAvailable() != null
+                ? balance.getAvailable()
+                : BigDecimal.ZERO;
+
+        BigDecimal projected = currentAvailable.add(amount);
+        BigDecimal maxBalance = MAX_BALANCE.get(asset);
+        if (maxBalance != null && projected.compareTo(maxBalance) > 0) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Demo balance cap exceeded for " + asset,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        balance.credit(amount);
         accountBalanceRepository.save(balance);
 
-        return new BalanceResponse(asset, balance.getAvailable(), balance.getReserved());
+        return new BalanceResponse(
+                asset,
+                balance.getAvailable(),
+                balance.getReserved() != null ? balance.getReserved() : BigDecimal.ZERO
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<BalanceResponse> getBalances(UUID userId) {
+        Account account = accountRepository.findByUserIdAndAccountTypeAndStatus(userId, AccountType.SPOT, AccountStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.NOT_FOUND,
+                        "Spot account not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        return accountBalanceRepository.findAllByAccountId(account.getId())
+                .stream()
+                .map(b -> new BalanceResponse(
+                        b.getAsset(),
+                        b.getAvailable() != null ? b.getAvailable() : BigDecimal.ZERO,
+                        b.getReserved() != null ? b.getReserved() : BigDecimal.ZERO
+                ))
+                .toList();
+    }
+
+    private void validateAsset(String asset) {
+        if (!SUPPORTED_ASSETS.contains(asset)) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Unsupported asset. Allowed: " + SUPPORTED_ASSETS,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private void validateAmount(String asset, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Amount must be greater than zero",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        BigDecimal maxPerTx = MAX_PER_TX.get(asset);
+        if (maxPerTx != null && amount.compareTo(maxPerTx) > 0) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Amount exceeds demo per-transaction limit for " + asset,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
     }
 }
