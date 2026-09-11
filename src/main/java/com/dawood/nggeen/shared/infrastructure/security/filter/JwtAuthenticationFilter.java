@@ -26,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -35,9 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final CustomUserDetailsImpl customUserDetails;
 
-    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
-
-    public static final List<String> PUBLIC_ENDPOINTS = List.of(
+    private static final Set<String> PUBLIC_ENDPOINTS = Set.of(
             "/auth/register",
             "/auth/login",
             "/auth/verify",
@@ -45,12 +44,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/logout",
             "/auth/verify-2fa"
     );
-
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return PUBLIC_ENDPOINTS.stream()
-                .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
+        return PUBLIC_ENDPOINTS.contains(request.getRequestURI());
     }
 
     @Override
