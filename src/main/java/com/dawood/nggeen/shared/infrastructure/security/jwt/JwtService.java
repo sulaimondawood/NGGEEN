@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
 
@@ -47,7 +48,8 @@ public class JwtService {
                     .withIssuer(ISSUER)
                     .withSubject(subject)
                     .withIssuedAt(Instant.now())
-                    .withExpiresAt(Instant.now().plus(DEFAULT_EXPIRY));
+                    .withExpiresAt(Instant.now().plus(Duration.ofMinutes(30)));
+//                    .withExpiresAt(Instant.now().plus(DEFAULT_EXPIRY));
 
             if (claims != null && !claims.isEmpty()) {
                 claims.forEach((key, value) -> {

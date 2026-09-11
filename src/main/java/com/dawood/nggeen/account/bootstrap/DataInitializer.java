@@ -78,7 +78,7 @@ public class DataInitializer implements CommandLineRunner {
                 .status(AccountStatus.ACTIVE)
                 .build();
 
-        accountRepository.saveAll(List.of(acc1, acc2));
+//        accountRepository.saveAll(List.of(acc1, acc2));
 
         // 3. Create Multi-Asset Balances
         List<AccountBalance> balances = List.of(
@@ -94,7 +94,7 @@ public class DataInitializer implements CommandLineRunner {
                 new AccountBalance(acc2, "ETH", new BigDecimal("200.000000000000000000"), BigDecimal.ZERO)
         );
 
-        accountBalanceRepository.saveAll(balances);
+//        accountBalanceRepository.saveAll(balances);
 
         log.info("Successfully seeded 3 users, 2 accounts, and {} asset balance rows.", balances.size());
     }
