@@ -176,9 +176,9 @@ public class AuthApplicationService {
             );
             String token = jwtService.createToken(claims, existingUser.getEmail());
             return new LoginResult(
-                    new LoginResponse(token, null),
+                    new LoginResponse(token, null, true),
                     null,
-                    null, true);
+                    null);
         }
 
 
@@ -194,9 +194,9 @@ public class AuthApplicationService {
                 new UserDTO(existingUser.getId(),
                         existingUser.getEmail(),
                         existingUser.getFullName(),
-                        existingUser.getRole()));
+                        existingUser.getRole()), false);
 
-        return new LoginResult(loginResponse, refreshToken, refreshDuration, false);
+        return new LoginResult(loginResponse, refreshToken, refreshDuration);
     }
 
     @Transactional
@@ -321,13 +321,13 @@ public class AuthApplicationService {
                 new UserDTO(user.getId(),
                         user.getEmail(),
                         user.getFullName(),
-                        user.getRole()));
+                        user.getRole()), false);
 
-        return new LoginResult(loginResponse, refreshToken, refreshDuration, false);
+        return new LoginResult(loginResponse, refreshToken, refreshDuration);
     }
 
     @Transactional
-    public TotpSetupResponse setupTotp() throws QrGenerationException {
+    public TotpSetupResponse setup2FA() throws QrGenerationException {
         User user = authenticationContext.getAuthenticatedUser();
         if (user.isTotpEnabled()) {
             throw new ConflictException(ErrorCode.CONFLICT, "2FA already enabled", HttpStatus.CONFLICT);
@@ -344,7 +344,7 @@ public class AuthApplicationService {
 
     }
 
-    public void confirmTotpSetup(String code) {
+    public void confirm2FASetup(String code) {
         if (code == null || code.isBlank()) {
             throw new AuthenticationException(
                     ErrorCode.UNAUTHORIZED,
@@ -374,10 +374,41 @@ public class AuthApplicationService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public ResponseCookie disable2FA(Disable2faRequest request) {
+        User user = authenticationContext.getAuthenticatedUser();
+        if (!user.isTotpEnabled()) {
+            throw new ConflictException(ErrorCode.CONFLICT, "2FA is not enabled on this account", HttpStatus.CONFLICT);
+        }
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Invalid password confirmation.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (!totpService.verify(user.getTotpSecret(), request.code())) {
+            throw new BadRequestException(
+                    ErrorCode.BAD_REQUEST,
+                    "Invalid authenticator code",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        user.setTotpEnabled(false);
+        user.setTotpSecret(null);
+        userRepository.save(user);
+        sessionRepository.revokeAllActiveSessionsForUser(user.getId(), Instant.now());
+
+       return tokenService.clearRefreshCookie();
+    }
+
     private String createToken(User existingUser) {
         Map<String, Object> claims = Map.of(
                 "userId", existingUser.getId().toString(),
-                "role", existingUser.getRole().name()
+                "role", existingUser.getRole().name(),
+                "token_use", "access"
         );
 
         return jwtService.createToken(claims, existingUser.getEmail());

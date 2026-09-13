@@ -21,14 +21,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-//    private final RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public SecurityFilterChain web(HttpSecurity http) {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cor -> cor.configurationSource(configurationSource()))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(
+                                "/auth/register",
+                                "/auth/login",
+                                "/auth/verify",
+                                "/auth/refresh",
+                                "/auth/logout",
+                                "/auth/verify-2fa"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

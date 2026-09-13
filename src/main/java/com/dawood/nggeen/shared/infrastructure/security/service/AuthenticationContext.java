@@ -1,10 +1,10 @@
 package com.dawood.nggeen.shared.infrastructure.security.service;
 
 import com.dawood.nggeen.account.model.User;
+import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import com.dawood.nggeen.shared.dto.ErrorCode;
 import com.dawood.nggeen.shared.exception.AuthenticationException;
 import com.dawood.nggeen.shared.exception.ResourceNotFoundException;
-import com.dawood.nggeen.identity.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
